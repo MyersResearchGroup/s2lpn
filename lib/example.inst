@@ -1,0 +1,118 @@
+//delimiters
+\ \t
+//merge code
+NO_TRANS
+
+set_rate
+// enabling:variable:value:time bounds 
+@1 @2 @3 @4 @5
+#r @2
+NO_BRANCH
+@next
+{@1}
+[@4,@5]
+<
+#r @2:=@3
+>
+
+set_val
+// enabling:variable:value:time bounds 
+@1 @2 @3 @4 @5
+#i @2
+NO_BRANCH
+@next
+{@1}
+[@4,@5]
+<
+@2:=@3
+>
+
+set_sig
+// enabling:variable:value:time bounds 
+@1 @2 @3 @4 @5
+#b @2
+NO_BRANCH
+@next
+{@1}
+[@4,@5]
+<
+#b @2:=@3
+>
+
+// zero time loop closure
+link
+@1
+BRANCH
+@1
+{NO_TRANS}
+[0,0]
+<
+>
+
+// wait then burn time
+pause
+@1 @2 @3
+NO_BRANCH
+@next
+{@1}
+[@2,@3]
+<
+>
+
+//conditional branch
+iff
+@1 @2 @3 @4
+NO_BRANCH
+@next
+{~(@1)}
+[@3,@4]
+<
+>
+BRANCH
+@2
+{@1}
+[@3,@4]
+<
+>
+
+//conditional branch different times
+iff
+@1 @2 @3 @4 @5 @6
+NO_BRANCH
+@next
+{~(@1)}
+[@3,@4]
+<
+>
+BRANCH
+@2
+{@1}
+[@5,@6]
+<
+>
+
+//random branch
+fork
+@2 @3 @4
+NO_BRANCH
+@next
+{}
+[@3,@4]
+<
+>
+BRANCH
+@2
+{}
+[@3,@4]
+<
+>
+
+// jump to top; RTI test
+jump_back
+
+BRANCH
+@first
+{}
+[0,0]
+<
+>

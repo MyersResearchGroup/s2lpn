@@ -1,0 +1,478 @@
+//delimiters
+#,+\t-\ []
+//merge code
+NO_TRANS
+
+//direct
+ldab
+ADCTL
+#b ccrN ccrV ccrZ adc_ccf adc_scan adc_mult 
+#b adc_cd adc_cc adc_cb adc_ca
+#i regB
+NO_BRANCH
+@next
+{}
+[3,3]
+<
+regB:=(adc_ccf*128)+(adc_scan*32)+(adc_mult*16)+(adc_cd*8)+(adc_cc*4)+(adc_cb*2)+(adc_ca)
+#b ccrN:=adc_ccf
+#b ccrZ:=(((adc_ccf*128)+(adc_scan*32)+(adc_mult*16)+(adc_cd*8)+(adc_cc*4)+(adc_cb*2)+(adc_ca))=0)
+#b ccrV:=FALSE
+>
+
+//immediate
+LDAB
+#@1
+@1 BOUND -128 255
+#b ccrN ccrV ccrZ
+#i regB
+NO_BRANCH
+@next
+{}
+[1,1]
+<
+regB:=@1
+#b ccrN:=(and(@1,128)=128)
+#b ccrZ:=(@1=0)
+#b ccrV:=FALSE
+>
+
+//direct
+LDAB
+@1
+@1 BOUND 0 255
+#b ccrN ccrV ccrZ
+#i regB @1 
+NO_BRANCH
+@next
+{}
+[3,3]
+<
+regB:=@1
+#b ccrN:=(and(@1,128)=128)
+#b ccrZ:=(@1=0)
+#b ccrV:=FALSE
+>
+
+//extended
+LDD
+@1
+#b ccrN ccrV ccrZ 
+#i regD @1 
+NO_BRANCH
+@next
+{}
+[3,3]
+<
+regD:=@1
+#b ccrN:=(and(@1,4096)=4096)
+#b ccrZ:=(@1=0)
+#b ccrV:=FALSE
+>
+
+//direct
+LDAA
+@1
+@1 BOUND 0 255
+#b ccrN ccrV ccrZ
+#i regA @1 
+NO_BRANCH
+@next
+{}
+[3,3]
+<
+regA:=@1
+#b ccrN:=(and(@1,128)=128)
+#b ccrZ:=(@1=0)
+#b ccrV:=FALSE
+>
+
+//direct
+stab
+ADCTL
+#b ccrN ccrV ccrZ adc_ccf adc_scan adc_mult adc_start
+#b adc_cd adc_cc adc_cb adc_ca
+#i regB
+NO_BRANCH
+@next
+{}
+[3,3]
+<
+#b adc_ccf:=false
+#b adc_scan:=(and(regB,32)=32)
+#b adc_mult:=(and(regB,16)=16)
+#b adc_cd:=(and(regB,8)=8)
+#b adc_cc:=(and(regB,4)=4)
+#b adc_cb:=(and(regB,2)=2)
+#b adc_ca:=(and(regB,1)=1)
+#b ccrN:=(and(regB,128)=128)
+#b ccrZ:=(regB=0)
+#b ccrV:=FALSE
+#b adc_start:=true
+>
+
+//direct
+staa
+ADCTL
+#b ccrN ccrV ccrZ adc_ccf adc_scan adc_mult adc_start
+#b adc_cd adc_cc adc_cb adc_ca
+#i regB
+NO_BRANCH
+@next
+{}
+[3,3]
+<
+#b adc_ccf:=false
+#b adc_scan:=(and(regB,32)=32)
+#b adc_mult:=(and(regB,16)=16)
+#b adc_cd:=(and(regB,8)=8)
+#b adc_cc:=(and(regB,4)=4)
+#b adc_cb:=(and(regB,2)=2)
+#b adc_ca:=(and(regB,1)=1)
+#b ccrN:=(and(regB,128)=128)
+#b ccrZ:=(regB=0)
+#b ccrV:=FALSE
+#b adc_start:=true
+>
+
+stab
+@1
+@1 BOUND 0 255
+#b ccrN ccrV ccrZ 
+#i regB @1 
+NO_BRANCH
+@next
+{}
+[3,3]
+<
+@1:=regB
+#b ccrN:=(and(regB,128)=128)
+#b ccrZ:=(regB=0)
+#b ccrV:=FALSE
+>
+
+staa
+@1
+@1 BOUND 0 255
+#b ccrN ccrV ccrZ 
+#i regA @1 
+NO_BRANCH
+@next
+{}
+[3,3]
+<
+@1:=regA
+#b ccrN:=(and(regA,128)=128)
+#b ccrZ:=(regA=0)
+#b ccrV:=FALSE
+>
+
+std
+@1
+#b ccrN ccrV ccrZ 
+#i regD @1 
+NO_BRANCH
+@next
+{}
+[5,5]
+<
+@1:=regD
+#b ccrN:=(and(regD,32768)=32768)
+#b ccrZ:=(regD=0)
+#b ccrV:=FALSE
+>
+
+//immediate
+addd
+#@1
+#b ccrC ccrN ccrV ccrZ
+#i regD
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+regD:=(regD+@1)
+#b ccrC:= (~(and(regD,32768)=32768)&(and(@1,32768)=32768))|((and(@1,32768)=32768)&(and((regD+@1),32768)=32768))|((and((regD+@1),32768)=32768)&~(and(regD,32768)=32768))
+#b ccrN:=(and((@1+regD),32768)=32768)
+#b ccrZ:=((@1+regD)=0)
+#b ccrV:=((and(regD,32768)=32768)&~(and(@1,32768)=32768)&~(and((regD+@1),32768)=32768))|(~(and(regD,32768)=32768)&(and(@1,32768)=32768)&(and((regD+@1),32768)=32768))
+>
+
+//immediate
+adda
+#@1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ
+#i regA
+NO_BRANCH
+@next
+{}
+[1,1]
+<
+regA:=(regA+@1)
+#b ccrC:= (~(and(regA,128)=128)&(and(@1,128)=128))|((and(@1,128)=128)&(and((regA+@1),128)=128))|((and((regA+@1),128)=128)&~(and(regA,128)=128))
+#b ccrN:=(and((@1+regA),128)=128)
+#b ccrZ:=((@1+regA)=0)
+#b ccrV:=((and(regA,128)=128)&~(and(@1,128)=128)&~(and((regA+@1),128)=128))|(~(and(regA,128)=128)&(and(@1,128)=128)&(and((regA+@1),128)=128))
+>
+
+//immediate
+addb
+#@1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ
+#i regB
+NO_BRANCH
+@next
+{}
+[1,1]
+<
+regB:=(regB+@1)
+#b ccrC:=(~(and(regB,128)=128)&(and(@1,128)=128))|((and(@1,128)=128)&(and((regB+@1),128)=128))|((and((regB+@1),128)=128)&~(and(regB,128)=128))
+#b ccrN:=(and((@1+regB),128)=128)
+#b ccrZ:=((@1+regB)=0)
+#b ccrV:=((and(regB,128)=128)&~(and(@1,128)=128)&~(and((regB+@1),128)=128))|(~(and(regB,128)=128)&(and(@1,128)=128)&(and((regB+@1),128)=128))
+>
+
+//direct
+SUBB
+@1
+@1 BOUND 0 255
+#b ccrC ccrN ccrV ccrZ
+#i regB @1
+NO_BRANCH
+@next
+{}
+[3,3]
+<
+regB:=regB-@1
+#b ccrC:=(~(and(regB,128)=128)&(and(@1,128)=128))|((and(@1,128)=128)&(and((regB-@1),128)=128))|((and((regB-@1),128)=128)&~(and(regB,128)=128))
+#b ccrN:=(and((regB-@1),128)=128)
+#b ccrZ:=((regB-@1)=0)
+#b ccrV:=((and(regB,128)=128)&~(and(@1,128)=128)&~(and((regB-@1),128)=128))|(~(and(regB,128)=128)&(and(@1,128)=128)&(and((regB-@1),128)=128))
+>
+
+//inherent
+SBA
+
+#b ccrC ccrN ccrV ccrZ
+#i regB regA
+NO_BRANCH
+@next
+{}
+[2,2]
+<
+regA:=regA-regB
+#b ccrC:=(~(and(regA,128)=128)&(and(regB,128)=128))|((and(regB,128)=128)&(and((regA-regB),128)=128))|((and((regA-regB),128)=128)&~(and(regA,128)=128))
+#b ccrN:=(and((regA-regB),128)=128)
+#b ccrZ:=((regA-regB)=0)
+#b ccrV:=((and(regA,128)=128)&~(and(regB,128)=128)&~(and((regA-regB),128)=128))|(~(and(regA,128)=128)&(and(regB,128)=128)&(and((regA-regB),128)=128))
+>
+
+//immediate
+andb
+#@1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ
+#i regB
+NO_BRANCH
+@next
+{}
+[1,1]
+<
+regB:=and(regB,@1)
+#b ccrN:=(and(and(@1,regB),128)=128)
+#b ccrZ:=(and(@1,regB)=0)
+#b ccrV:=false
+>
+
+//direct
+orab
+@1
+#b ccrC ccrN ccrV ccrZ
+#i regB @1
+NO_BRANCH
+@next
+{}
+[1,1]
+<
+regB:=or(regB,@1)
+#b ccrN:=(and(or(@1,regB),128)=128)
+#b ccrZ:=(or(@1,regB)=0)
+#b ccrV:=false
+>
+
+//immediate
+cmpa
+#@1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ
+#i regA
+NO_BRANCH
+@next
+{}
+[1,1]
+<
+#b ccrC:=(~(and(regA,128)=128)&(and(@1,128)=128))|((and(@1,128)=128)&(and((regA-@1),128)=128))|((and((regA-@1),128)=128)&~(and(regA,128)=128))
+#b ccrN:=(and((regA-@1),128)=128)
+#b ccrZ:=((regA-@1)=0)
+#b ccrV:=((and(regA,128)=128)&~(and(@1,128)=128)&~(and((regA-@1),128)=128))|(~(and(regA,128)=128)&(and(@1,128)=128)&(and((regA-@1),128)=128))
+>
+
+//immediate
+cmpb
+#@1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ
+#i regB
+NO_BRANCH
+@next
+{}
+[1,1]
+<
+#b ccrC:=(~(and(regB,128)=128)&(and(@1,128)=128))|((and(@1,128)=128)&(and((regB-@1),128)=128))|((and((regB-@1),128)=128)&~(and(regB,128)=128))
+#b ccrN:=(and((regB-@1),128)=128)
+#b ccrZ:=((regB-@1)=0)
+#b ccrV:=((and(regB,128)=128)&~(and(@1,128)=128)&~(and((regB-@1),128)=128))|(~(and(regB,128)=128)&(and(@1,128)=128)&(and((regB-@1),128)=128))
+>
+
+BRA
+@1
+BRANCH
+@1
+{}
+[3,3]
+<
+>
+
+BSR
+@1
+#b @1_1
+NO_BRANCH
+@next
+{}
+[3,3]
+<
+#b @1_1:=TRUE
+>
+{~@1_1}
+[0,0]
+<
+>
+
+BGE
+@1
+#b ccrN ccrV
+BRANCH
+@1
+{((ccrN&~ccrV)|(~ccrN&ccrV))}
+[3,3]
+<
+>
+NO_BRANCH
+@next
+{((ccrN&ccrV)|(~ccrN&~ccrV))}
+[1,1]
+<
+>
+
+BLO
+@1
+#b ccrC 
+BRANCH
+@1
+{(ccrC)}
+[3,3]
+<
+>
+NO_BRANCH
+@next
+{(~ccrC)}
+[1,1]
+<
+>
+
+BLS
+@1
+#b ccrC ccrV
+BRANCH
+@1
+{(ccrC|ccrZ)}
+[3,3]
+<
+>
+NO_BRANCH
+@next
+{(~ccrC&~ccrZ)}
+[1,1]
+<
+>
+
+BPL
+@1
+#b ccrN 
+BRANCH
+@1
+{~ccrN}
+[3,3]
+<
+>
+NO_BRANCH
+@next
+{ccrN}
+[1,1]
+<
+>
+
+BEQ
+@1
+#b ccrZ
+BRANCH
+@1
+{ccrZ}
+[3,3]
+<
+>
+NO_BRANCH
+@next
+{~ccrZ}
+[1,1]
+<
+>
+
+//pragma "set_pred"
+set_pred
+@1
+#b @1
+NO_BRANCH
+@next
+{}
+[0,0]
+<
+#b @1:=TRUE
+>
+
+//pragma "clear_pred"
+clear_pred
+@1
+#b @1
+NO_BRANCH
+@next
+{}
+[0,0]
+<
+#b @1:=FALSE
+>
+
+//pragma "pred"
+pred
+@1
+#b @1
+NO_BRANCH
+@next
+{@1}
+[0,0]
+<
+>
+
