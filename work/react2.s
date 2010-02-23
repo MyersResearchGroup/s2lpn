@@ -1,20 +1,17 @@
 ;@ include <6811.inst>
-; @ univ_pred	 ~shutdown
-;@ init_sig 	shutdown false
-;@ mark
+
 main	ldab	#48
 	stab 	ADCTL
 test	ldab	ADCTL
-	cmpb	#128 
-	blo	 test
+	bpl	 test
 loop	ldab 	 ADR1
 	ldaa 	 ADR2
 	sba
-	adda	 #1
-	cmpa 	 #2
+	adda	 #6
+	cmpa 	 #12
 	bls  	 loop
+;@	fail_set
 	ldab	 #7
 	stab	 PORTB
-;@	set_pred shutdown 
 term	bra 	 term
 
