@@ -80,9 +80,13 @@ void process_line(string line, language *in_language, fstream* progfile,
 }
 
 language *get_language(library *languages, string fname){
-  string env_var = getenv("S2LPNLIB");
-  if (env_var == "")
-    env_var = "../lib/";
+  char *env_str = getenv("S2LPNLIB");
+  string env_var;
+  if (env_str == NULL) {
+    env_var = "../";
+  } else {
+    env_var = getenv("S2LPNLIB");
+  }
   int local = 0;
   if (fname.at(0) == '"'){
     local = 1;
