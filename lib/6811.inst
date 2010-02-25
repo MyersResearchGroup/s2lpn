@@ -193,7 +193,7 @@ NO_BRANCH
 [4,4]
 <
 regD:=(regD+@1)
-#b ccrC:= (~BIT(regD,15)&BIT(@1,15))|(BIT(@1,15)&BIT(regD+@1,15))|(BIT(regD+@1,15)&~BIT(regD,15))
+#b ccrC:=(~BIT(regD,15)&BIT(@1,15))|(BIT(@1,15)&BIT(regD+@1,15))|(BIT(regD+@1,15)&~BIT(regD,15))
 #b ccrN:=BIT(regD+@1,15)
 #b ccrZ:=((@1+regD)=0)
 #b ccrV:=(BIT(regD,15)&~BIT(@1,15)&~BIT(regD+@1,15))|(~BIT(regD,15)&BIT(@1,15)&BIT(regD+@1,15))
@@ -211,7 +211,7 @@ NO_BRANCH
 [1,1]
 <
 regA:=(regA+@1)
-#b ccrC:= (~BIT(regA,7)&BIT(@1,7))|(BIT(@1,7)&BIT(regA+@1,7))|(BIT(regA+@1,7)&~BIT(regA,7))
+#b ccrC:=(~BIT(regA,7)&BIT(@1,7))|(BIT(@1,7)&BIT(regA+@1,7))|(BIT(regA+@1,7)&~BIT(regA,7))
 #b ccrN:=BIT(@1+regA,7)
 #b ccrZ:=((@1+regA)=0)
 #b ccrV:=(BIT(regA,7)&~BIT(@1,7)&~BIT(regA+@1,7))|(~BIT(regA,7)&BIT(@1,7)&BIT(regA+@1,7))
@@ -229,7 +229,7 @@ NO_BRANCH
 [1,1]
 <
 regB:=(regB+@1)
-#b ccrC:= (~BIT(regB,7)&BIT(@1,7))|(BIT(@1,7)&BIT(regB+@1,7))|(BIT(regB+@1,7)&~BIT(regB,7))
+#b ccrC:=(~BIT(regB,7)&BIT(@1,7))|(BIT(@1,7)&BIT(regB+@1,7))|(BIT(regB+@1,7)&~BIT(regB,7))
 #b ccrN:=BIT(regB+@1,7)
 #b ccrZ:=((regB+@1)=0)
 #b ccrV:=(BIT(regB,7)&~BIT(@1,7)&~BIT(regB+@1,7))|(~BIT(regB,7)&BIT(@1,7)&BIT(regB+@1,7))
@@ -247,7 +247,7 @@ NO_BRANCH
 [3,3]
 <
 regB:=(regB-@1)
-#b ccrC:= (~BIT(regB,7)&BIT(@1,7))|(BIT(@1,7)&BIT(regB-@1,7))|(BIT(regB-@1,7)&~BIT(regB,7))
+#b ccrC:=(~BIT(regB,7)&BIT(@1,7))|(BIT(@1,7)&BIT(regB-@1,7))|(BIT(regB-@1,7)&~BIT(regB,7))
 #b ccrN:=BIT(regB-@1,7)
 #b ccrZ:=((regB-@1)=0)
 #b ccrV:=(BIT(regB,7)&~BIT(@1,7)&~BIT(regB-@1,7))|(~BIT(regB,7)&BIT(@1,7)&BIT(regB-@1,7))
@@ -264,7 +264,7 @@ NO_BRANCH
 [2,2]
 <
 regA:=(regA-regB)
-#b ccrC:= (~BIT(regA,7)&BIT(regB,7))|(BIT(regB,7)&BIT(regA-regB,7))|(BIT(regA-regB,7)&~BIT(regA,7))
+#b ccrC:=(~BIT(regA,7)&BIT(regB,7))|(BIT(regB,7)&BIT(regA-regB,7))|(BIT(regA-regB,7)&~BIT(regA,7))
 #b ccrN:=BIT(regA-regB,7)
 #b ccrZ:=((regA-regB)=0)
 #b ccrV:=(BIT(regA,7)&~BIT(regB,7)&~BIT(regA-regB,7))|(~BIT(regA,7)&BIT(regB,7)&BIT(regA-regB,7))
@@ -314,7 +314,7 @@ NO_BRANCH
 {}
 [1,1]
 <
-#b ccrC:= (~BIT(regA,7)&BIT(@1,7))|(BIT(@1,7)&BIT(regA-@1,7))|(BIT(regA-@1,7)&~BIT(regA,7))
+#b ccrC:=(~BIT(regA,7)&BIT(@1,7))|(BIT(@1,7)&BIT(regA-@1,7))|(BIT(regA-@1,7)&~BIT(regA,7))
 #b ccrN:=BIT(regA-@1,7)
 #b ccrZ:=((regA-@1)=0)
 #b ccrV:=(BIT(regA,7)&~BIT(@1,7)&~BIT(regA-@1,7))|(~BIT(regA,7)&BIT(@1,7)&BIT(regA-@1,7))
@@ -331,7 +331,7 @@ NO_BRANCH
 {}
 [1,1]
 <
-#b ccrC:= (~BIT(regB,7)&BIT(@1,7))|(BIT(@1,7)&BIT(regB-@1,7))|(BIT(regB-@1,7)&~BIT(regB,7))
+#b ccrC:=(~BIT(regB,7)&BIT(@1,7))|(BIT(@1,7)&BIT(regB-@1,7))|(BIT(regB-@1,7)&~BIT(regB,7))
 #b ccrN:=BIT(regB-@1,7)
 #b ccrZ:=((regB-@1)=0)
 #b ccrV:=(BIT(regB,7)&~BIT(@1,7)&~BIT(regB-@1,7))|(~BIT(regB,7)&BIT(@1,7)&BIT(regB-@1,7))
