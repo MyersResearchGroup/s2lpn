@@ -55,6 +55,22 @@ regB:=@1
 #b ccrV:=FALSE
 >
 
+//immediate
+LDD
+#@1
+#b ccrN ccrV ccrZ 
+#i regD  
+NO_BRANCH
+@next
+{}
+[3,3]
+<
+regD:=@1
+#b ccrN:=BIT(@1,15)
+#b ccrZ:=(@1=0)
+#b ccrV:=FALSE
+>
+
 //extended
 LDD
 @1
@@ -66,6 +82,38 @@ NO_BRANCH
 [3,3]
 <
 regD:=@1
+#b ccrN:=BIT(@1,15)
+#b ccrZ:=(@1=0)
+#b ccrV:=FALSE
+>
+
+//immediate
+LDY
+#@1
+#b ccrN ccrV ccrZ 
+#i regY  
+NO_BRANCH
+@next
+{}
+[3,3]
+<
+regY:=@1
+#b ccrN:=BIT(@1,15)
+#b ccrZ:=(@1=0)
+#b ccrV:=FALSE
+>
+
+//extended
+LDY
+@1
+#b ccrN ccrV ccrZ 
+#i regY @1 
+NO_BRANCH
+@next
+{}
+[3,3]
+<
+regY:=@1
 #b ccrN:=BIT(@1,15)
 #b ccrZ:=(@1=0)
 #b ccrV:=FALSE
@@ -193,7 +241,24 @@ NO_BRANCH
 {}
 [4,4]
 <
-regD:=(regD+@1)
+regD:=(regD+@1)%65536
+#b ccrC:=(~BIT(regD,15)&BIT(@1,15))|(BIT(@1,15)&BIT(regD+@1,15))|(BIT(regD+@1,15)&~BIT(regD,15))
+#b ccrN:=BIT(regD+@1,15)
+#b ccrZ:=((@1+regD)=0)
+#b ccrV:=(BIT(regD,15)&~BIT(@1,15)&~BIT(regD+@1,15))|(~BIT(regD,15)&BIT(@1,15)&BIT(regD+@1,15))
+>
+
+//direct
+addd
+@1
+#b ccrC ccrN ccrV ccrZ
+#i regD @1
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+regD:=(regD+@1)%65536
 #b ccrC:=(~BIT(regD,15)&BIT(@1,15))|(BIT(@1,15)&BIT(regD+@1,15))|(BIT(regD+@1,15)&~BIT(regD,15))
 #b ccrN:=BIT(regD+@1,15)
 #b ccrZ:=((@1+regD)=0)
@@ -252,6 +317,38 @@ regB:=(regB-@1)
 #b ccrN:=BIT(regB-@1,7)
 #b ccrZ:=((regB-@1)=0)
 #b ccrV:=(BIT(regB,7)&~BIT(@1,7)&~BIT(regB-@1,7))|(~BIT(regB,7)&BIT(@1,7)&BIT(regB-@1,7))
+>
+
+//immediate
+SUBB
+#@1
+@1 BOUND 0 255
+#b ccrC ccrN ccrV ccrZ
+#i regB
+NO_BRANCH
+@next
+{}
+[1,1]
+<
+regB:=(regB-@1)
+#b ccrC:=(~BIT(regB,7)&BIT(@1,7))|(BIT(@1,7)&BIT(regB-@1,7))|(BIT(regB-@1,7)&~BIT(regB,7))
+#b ccrN:=BIT(regB-@1,7)
+#b ccrZ:=((regB-@1)=0)
+#b ccrV:=(BIT(regB,7)&~BIT(@1,7)&~BIT(regB-@1,7))|(~BIT(regB,7)&BIT(@1,7)&BIT(regB-@1,7))
+>
+
+//inherent
+dey
+
+#b ccrZ
+#i regY
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+regY:=(regY-1)
+#b ccrZ:=((regY-1)=0)
 >
 
 //inherent
@@ -336,6 +433,39 @@ NO_BRANCH
 #b ccrN:=BIT(regB-@1,7)
 #b ccrZ:=((regB-@1)=0)
 #b ccrV:=(BIT(regB,7)&~BIT(@1,7)&~BIT(regB-@1,7))|(~BIT(regB,7)&BIT(@1,7)&BIT(regB-@1,7))
+>
+
+//direct
+cmpb
+@1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ
+#i regB @1
+NO_BRANCH
+@next
+{}
+[1,1]
+<
+#b ccrC:=(~BIT(regB,7)&BIT(@1,7))|(BIT(@1,7)&BIT(regB-@1,7))|(BIT(regB-@1,7)&~BIT(regB,7))
+#b ccrN:=BIT(regB-@1,7)
+#b ccrZ:=((regB-@1)=0)
+#b ccrV:=(BIT(regB,7)&~BIT(@1,7)&~BIT(regB-@1,7))|(~BIT(regB,7)&BIT(@1,7)&BIT(regB-@1,7))
+>
+
+//direct
+cpd
+@1
+#b ccrC ccrN ccrV ccrZ
+#i regD @1
+NO_BRANCH
+@next
+{}
+[1,1]
+<
+#b ccrC:=(~BIT(regD,15)&BIT(@1,15))|(BIT(@1,15)&BIT(regD-@1,15))|(BIT(regD-@1,15)&~BIT(regD,15))
+#b ccrN:=BIT(regD-@1,15)
+#b ccrZ:=((regD-@1)=0)
+#b ccrV:=(BIT(regD,15)&~BIT(@1,15)&~BIT(regD-@1,15))|(~BIT(regD,15)&BIT(@1,15)&BIT(regD-@1,15))
 >
 
 BRA
@@ -442,6 +572,22 @@ NO_BRANCH
 <
 >
 
+BNE
+@1
+#b ccrZ
+BRANCH
+@1
+{~ccrZ}
+[3,3]
+<
+>
+NO_BRANCH
+@next
+{ccrZ}
+[1,1]
+<
+>
+
 //pragma "set_pred"
 set_pred
 @1
@@ -473,6 +619,27 @@ pred
 NO_BRANCH
 @next
 {@1}
+[0,0]
+<
+>
+
+rts
+@1
+#b @1_1
+BRANCH
+@1
+{}
+[1,1]
+<
+#b @1_1:=FALSE
+>
+
+subroutine
+@1
+#b @1_1
+NO_BRANCH
+@next
+{@1_1}
 [0,0]
 <
 >
