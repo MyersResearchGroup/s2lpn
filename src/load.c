@@ -8,17 +8,23 @@ int lhpn::inst_num = 0, lhpn::pl_num = 0, lhpn::tr_num = 0;
 string ass_pop_line(fstream *in_file){
   //cout << "ass_pop_line\n";
   string temp;
-  int i, done = 0;
+  unsigned int i, done = 0;
   // get first line
   getline(*in_file,temp);  
-  if (temp.length() == 0)
-    return temp;
-  // discard comment lines
   while (!done){
+    if (temp.length() == 0)
+      return temp;
+    // discard comment lines
     i = 0;
     //skip leading whitespace  
     while ((temp.at(i) == ' ') || (temp.at(i) == '\t')){
-       i++;
+      i++;
+      if (i == temp.length()){
+	if (in_file->eof())
+	  return "";
+	getline(*in_file,temp);
+	break;
+      }
     }
     // test for comment characters, test for pragma characters
     if (temp.at(i) == ';'){ 
@@ -722,6 +728,8 @@ void instruction::replace(pr_list *args){
 void instruction::print(){
   if (label != "")
     cout <<label<<" ";
+  if (mnemonic == "")
+    cout << "THIS IS  A BOGUS INSTRUCTION\n";
   cout << mnemonic <<" " << pattern<<"\n";
   if (marked)
     cout << "marked\n";
@@ -773,6 +781,8 @@ void instruction::predicate(string pred){
 }
 
 int instruction::merge(string test){
+//   cout << "current instruction:\n";
+//   this->print();
   if ((next ==NULL) || (next->first->head->enabling != test)){
     return 0;
   }
@@ -1133,7 +1143,9 @@ instruction *language::find_inst(string command, string args){
     failed = 1;
     // look for matching mnemonic
     if (temp->mnemonic == command){
-      //cout << "matching |" << temp->pattern <<"| |"<<args<<"|\n"; 
+/*       temp->print(); */
+/*       cout << temp->mnemonic << "\n"; */
+/*       cout << "matching |" << temp->pattern <<"| |"<<args<<"|\n";  */
       pos1_1 = 0;
       pos2_1 = 0;
       l2 = temp->pattern.length();
@@ -1165,8 +1177,7 @@ instruction *language::find_inst(string command, string args){
 	  // check for str_2 = @NUM and str_1 is not a delimiter
 	  //cout << "gothere "<<str_1<<" "<<str_2<<" "<<res1<<" "<<res2<<"\n";
 	  if ((res1 == 1) && (str_2.at(0) == '@')){
-	    // build string pairs here...
-	    arg_list->insert(str_2,str_1);
+	      arg_list->insert(str_2,str_1);
 	  }//fi
 	  else {
 	    delete arg_list;
@@ -1239,6 +1250,8 @@ language *load_language(string fname){
   while (!instfile.eof()){
     // read instruction
     mnemonic = cpp_pop_line(&instfile);
+    if (mnemonic == "")
+      continue;
     // read operand pattern
     pattern = cpp_pop_line(&instfile);
     inst = new instruction(upconvert(mnemonic), pattern);
@@ -1550,7 +1563,7 @@ void lhpn::print(string l_name){
   temp = head;
   while (temp != NULL){
     l_file << "<" << temp->label;
-    l_file << "=[" << temp->lower<<","<<temp->upper<<"]>";
+    l_file << "=[uniform(" << temp->lower<<","<<temp->upper<<")]>";
     temp = temp->next;
   }
   l_file << "}\n";
@@ -1605,18 +1618,27 @@ void lhpn::update(language *prog){
       marking->insert(curr_inst->label);
     tmp_pr = curr_inst->vars->head;
     while (tmp_pr){
-      vars->insert(tmp_pr->left,tmp_pr->right);
+      if (isntNumber(tmp_pr->left.c_str()))
+	vars->insert(tmp_pr->left,tmp_pr->right);
+      else
+	cout << "discarding var " << tmp_pr->left << "\n";
       tmp_pr = tmp_pr->next;
     }
     //update sigs;
     tmp_pr = curr_inst->sigs->head;
     while (tmp_pr){
-      sigs->insert(tmp_pr->left,tmp_pr->right);
+      if (isntNumber(tmp_pr->left.c_str()))
+	sigs->insert(tmp_pr->left,tmp_pr->right);
+      else
+	cout << "discarding sig " << tmp_pr->left << "\n";
       tmp_pr = tmp_pr->next;
     }
     tmp_pr = curr_inst->conts->head;
     while (tmp_pr){
-      conts->insert(tmp_pr->left,tmp_pr->right);
+      if (isntNumber(tmp_pr->left.c_str()))
+	conts->insert(tmp_pr->left,tmp_pr->right);
+      else
+	cout << "discarding cont " << tmp_pr->left << "\n";
       tmp_pr = tmp_pr->next;
     }
     //create place; if instruction doesn't have a name, create an iX

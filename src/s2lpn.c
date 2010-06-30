@@ -18,7 +18,7 @@ void process_line(string line, language *in_language, fstream* progfile,
   word = "";
   word2 = getword(line);
   line = stripword(line);
-  cout << "looking up \""<<word2<<"\" with args \"" <<line <<"\"\n";
+  //cout << "looking up \""<<word2<<"\" with args \"" <<line <<"\"\n";
   if (word2 == "mark"){
     *mark = 1;
     found++;
@@ -27,7 +27,7 @@ void process_line(string line, language *in_language, fstream* progfile,
   if (word2 == "fail_set"){
     *fail_trans = 1;
     found++;
-    cout << "next instruction in fail set.\n";
+    //cout << "next instruction in fail set.\n";
   }
   if ((word2 == "univ_pred")||(word2 == "init_val")||(word2 == "init_sig")||
       (word2 == "init_rate")){
@@ -42,7 +42,14 @@ void process_line(string line, language *in_language, fstream* progfile,
   }
   if (!found){
     // not found, must be a labelled instruction
-    word = word2;
+    // strip colon
+    if (word2.at(word2.length()-1)==':'){
+      //cout << word2 << " ends in a colon\n";
+      word = word2.substr(0,word2.length()-1);
+      //cout << word << " does not\n";
+    }
+    else
+      word = word2;
     //cout << word << " must be a label\n";
     word2 = getword(line);
       line = stripword(line);
@@ -103,7 +110,7 @@ language *get_language(library *languages, string fname){
     temp->filename = fname;
     if (temp){
       cout << "loaded language "<< fname <<"\n";
-      // temp->print();
+      //temp->print();
       languages->insert(temp);
     }
   }
@@ -167,6 +174,7 @@ int main(int argc, char *argv[]){
     if (!in_language){
       return 1;
     }
+    //return 0;
     out_language->merger = in_language->merger;
     // get first input instruction
     line = ass_pop_line(&progfile);
@@ -178,6 +186,7 @@ int main(int argc, char *argv[]){
 		   &mark,&fail_trans);
       line = ass_pop_line(&progfile);
     }
+    //cout << "finished processing\n";
     //out_language->print();
     // process "merged" instructions here.
     out_language->merge();

@@ -11,4 +11,4 @@ s2lpn.o:	s2lpn.c load.h
 	g++ -Wall -c s2lpn.c
 
 clean:
-	rm *.o ../../bin/s2lpn
+	rm -f *.o ../../bin/s2lpn
