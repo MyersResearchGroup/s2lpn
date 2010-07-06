@@ -1620,8 +1620,8 @@ void lhpn::update(language *prog){
     while (tmp_pr){
       if (isntNumber(tmp_pr->left.c_str()))
 	vars->insert(tmp_pr->left,tmp_pr->right);
-      else
-	cout << "discarding var " << tmp_pr->left << "\n";
+      //      else
+      //	cout << "discarding var " << tmp_pr->left << "\n";
       tmp_pr = tmp_pr->next;
     }
     //update sigs;
@@ -1629,16 +1629,16 @@ void lhpn::update(language *prog){
     while (tmp_pr){
       if (isntNumber(tmp_pr->left.c_str()))
 	sigs->insert(tmp_pr->left,tmp_pr->right);
-      else
-	cout << "discarding sig " << tmp_pr->left << "\n";
+      //      else
+      //	cout << "discarding sig " << tmp_pr->left << "\n";
       tmp_pr = tmp_pr->next;
     }
     tmp_pr = curr_inst->conts->head;
     while (tmp_pr){
       if (isntNumber(tmp_pr->left.c_str()))
 	conts->insert(tmp_pr->left,tmp_pr->right);
-      else
-	cout << "discarding cont " << tmp_pr->left << "\n";
+      //else
+      //	cout << "discarding cont " << tmp_pr->left << "\n";
       tmp_pr = tmp_pr->next;
     }
     //create place; if instruction doesn't have a name, create an iX
