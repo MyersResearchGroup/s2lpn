@@ -44,13 +44,13 @@ LDAB
 @1
 @1 BOUND 0 255
 #b ccrN ccrV ccrZ
-#i regB @1 
+#i regD @1 
 NO_BRANCH
 @next
 {}
 [3,3]
 <
-regB:=and(regD,65280)+(@1%256)
+regD:=and(regD,65280)+(@1%256)
 #b ccrN:=BIT(@1,7)
 #b ccrZ:=((@1%256)=0)
 #b ccrV:=FALSE
