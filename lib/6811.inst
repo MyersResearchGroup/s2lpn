@@ -1558,7 +1558,7 @@ regSP:=regSP+2
 pshx
 
 #b MEM_WRITE
-#i regSP MEM_ADDR MEM_DATA
+#i regSP regX MEM_ADDR MEM_DATA
 NO_BRANCH
 @next
 {}
@@ -1582,7 +1582,7 @@ regSP:=(regSP+65535)%65536
 pulx
 
 #b MEM_READ
-#i regSP MEM_ADDR MEM_DATA
+#i regSP regX MEM_ADDR MEM_DATA
 NO_BRANCH
 @next
 {}
