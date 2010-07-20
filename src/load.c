@@ -413,9 +413,10 @@ void pr_list::substitute(str_pr *arg){
 	head = temp->next;
       delete temp;
       insert(temp_left,temp_right);
-      return;
+      temp = head;
     }
-    temp = temp->next;
+    else
+      temp = temp->next;
   }   
 }
 
