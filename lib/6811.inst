@@ -1,24 +1,50 @@
-//6811.inst
-//regD = regA:regB
+// 6811.inst
+// regD = regA:regB
+// memory storage is high order byte first, 
+//  i.e. STD foo => foo:=regA and foo+1:=regB
+// This version maintains regA and regB as independent variables,
+// splicing them when necessary to generate regD.  In addition, 
+// variables accessed by 16 bit loads are assumed to have two 
+// halves, i.e foo and foo_p_1.  foo_p_1 is the low order byte.
+// 
+//
 //delimiters
 #,+\t-\ []
 //merge code
 NO_TRANS
 
-//direct
-LDAB
-ADCTL
-#b ccrN ccrV ccrZ adc_ccf adc_scan adc_mult 
-#b adc_cd adc_cc adc_cb adc_ca
-#i regD
+////////////////////LOAD INSTRUCTIONS//////////////////////////
+//immediate
+LDAA
+#@1
+@1 BOUND -128 255
+#b ccrN ccrV ccrZ
+#i regA
 NO_BRANCH
 @next
 {}
-[3,3]
+[1,1]
 <
-regD:=and(regD,65280)+(adc_ccf*128)+(adc_scan*32)+(adc_mult*16)+(adc_cd*8)+(adc_cc*4)+(adc_cb*2)+(adc_ca)
-#b ccrN:=adc_ccf
-#b ccrZ:=~adc_ccf&~adc_scan&~adc_mult&~adc_cd&~adc_cc&~adc_cb&~adc_ca
+regA:=(@1%256)
+#b ccrN:=BIT(@1,7)
+#b ccrZ:=((@1%256)=0)
+#b ccrV:=FALSE
+>
+
+//immediate
+LDAA
+#-@1
+@1 BOUND -128 255
+#b ccrN ccrV ccrZ
+#i regA
+NO_BRANCH
+@next
+{}
+[1,1]
+<
+regA:=(-@1%256)
+#b ccrN:=BIT(-@1,7)
+#b ccrZ:=((-@1%256)=0)
 #b ccrV:=FALSE
 >
 
@@ -27,32 +53,32 @@ LDAB
 #@1
 @1 BOUND -128 255
 #b ccrN ccrV ccrZ
-#i regD
+#i regB
 NO_BRANCH
 @next
 {}
 [1,1]
 <
-regD:=and(regD,65280)+(@1%256)
+regB:=(@1%256)
 #b ccrN:=BIT(@1,7)
 #b ccrZ:=((@1%256)=0)
 #b ccrV:=FALSE
 >
 
-//direct
+//immediate
 LDAB
-@1
-@1 BOUND 0 255
+#-@1
+@1 BOUND -128 255
 #b ccrN ccrV ccrZ
-#i regD @1 
+#i regB
 NO_BRANCH
 @next
 {}
-[3,3]
+[1,1]
 <
-regD:=and(regD,65280)+(@1%256)
-#b ccrN:=BIT(@1,7)
-#b ccrZ:=((@1%256)=0)
+regB:=(-@1%256)
+#b ccrN:=BIT(-@1,7)
+#b ccrZ:=((-@1%256)=0)
 #b ccrV:=FALSE
 >
 
@@ -60,13 +86,14 @@ regD:=and(regD,65280)+(@1%256)
 LDD
 #@1
 #b ccrN ccrV ccrZ 
-#i regD @1 
+#i regA regB @1 
 NO_BRANCH
 @next
 {}
 [3,3]
 <
-regD:=(@1%65536)
+regA:=(@1/256)%256
+regB:=@1%256
 #b ccrN:=BIT(@1,15)
 #b ccrZ:=((@1%65536)=0)
 #b ccrV:=FALSE
@@ -76,29 +103,30 @@ regD:=(@1%65536)
 LDD
 #-@1
 #b ccrN ccrV ccrZ 
-#i regD  
+#i regA regB  
 NO_BRANCH
 @next
 {}
 [3,3]
 <
-regD:=(-@1%32768)
+regA:=(-@1/256)%256
+regB:=-@1%256
 #b ccrN:=BIT(-@1,15)
-#b ccrZ:=((-@1%32768)=0)
+#b ccrZ:=((-@1%65536)=0)
 #b ccrV:=FALSE
 >
 
-//extended
-LDD
-@1
+//immediate
+LDS
+#@1
 #b ccrN ccrV ccrZ 
-#i regD @1 
+#i regSP @1
 NO_BRANCH
 @next
 {}
 [3,3]
 <
-regD:=(@1%65536)
+regSP:=(@1%65536)
 #b ccrN:=BIT(@1,15)
 #b ccrZ:=((@1%65536)=0)
 #b ccrV:=FALSE
@@ -108,23 +136,7 @@ regD:=(@1%65536)
 LDX
 #@1
 #b ccrN ccrV ccrZ 
-#i regX  
-NO_BRANCH
-@next
-{}
-[3,3]
-<
-regX:=(@1%65536)
-#b ccrN:=BIT(@1,15)
-#b ccrZ:=((@1%65536)=0)
-#b ccrV:=FALSE
->
-
-//extended
-LDX
-@1
-#b ccrN ccrV ccrZ 
-#i regX @1 
+#i regX @1
 NO_BRANCH
 @next
 {}
@@ -139,6 +151,22 @@ regX:=(@1%65536)
 //immediate
 LDY
 #@1
+#b ccrN ccrV ccrZ 
+#i regY @1
+NO_BRANCH
+@next
+{}
+[3,3]
+<
+regY:=(@1%65536)
+#b ccrN:=BIT(@1,15)
+#b ccrZ:=((@1%65536)=0)
+#b ccrV:=FALSE
+>
+
+//immediate
+LDY
+#-@1
 #b ccrN ccrV ccrZ 
 #i regY  
 NO_BRANCH
@@ -146,9 +174,127 @@ NO_BRANCH
 {}
 [3,3]
 <
-regY:=(@1%65536)
-#b ccrN:=BIT(@1,15)
-#b ccrZ:=((@1%65536)=0)
+regY:=(-@1%65536)
+#b ccrN:=BIT(-@1,15)
+#b ccrZ:=((-@1%65536)=0)
+#b ccrV:=FALSE
+>
+
+//extended
+LDAA
+ADCTL
+#b ccrN ccrV ccrZ adc_ccf adc_scan adc_mult 
+#b adc_cd adc_cc adc_cb adc_ca
+#i regA
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+regA:=(adc_ccf*128)+(adc_scan*32)+(adc_mult*16)+(adc_cd*8)+(adc_cc*4)+(adc_cb*2)+(adc_ca)
+#b ccrN:=adc_ccf
+#b ccrZ:=~adc_ccf&~adc_scan&~adc_mult&~adc_cd&~adc_cc&~adc_cb&~adc_ca
+#b ccrV:=FALSE
+>
+
+//extended
+LDAB
+ADCTL
+#b ccrN ccrV ccrZ adc_ccf adc_scan adc_mult 
+#b adc_cd adc_cc adc_cb adc_ca
+#i regB
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+regB:=(adc_ccf*128)+(adc_scan*32)+(adc_mult*16)+(adc_cd*8)+(adc_cc*4)+(adc_cb*2)+(adc_ca)
+#b ccrN:=adc_ccf
+#b ccrZ:=~adc_ccf&~adc_scan&~adc_mult&~adc_cd&~adc_cc&~adc_cb&~adc_ca
+#b ccrV:=FALSE
+>
+
+//extended
+LDAA
+@1
+@1 BOUND 0 255
+#b ccrN ccrV ccrZ
+#i regA @1 
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+regA:=(@1%256)
+#b ccrN:=BIT(@1,7)
+#b ccrZ:=((@1%256)=0)
+#b ccrV:=FALSE
+>
+
+//extended
+LDAB
+@1
+@1 BOUND 0 255
+#b ccrN ccrV ccrZ
+#i regB @1 
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+regB:=(@1%256)
+#b ccrN:=BIT(@1,7)
+#b ccrZ:=((@1%256)=0)
+#b ccrV:=FALSE
+>
+
+//extended
+LDAB
+@1+1
+@1 BOUND 0 255
+#b ccrN ccrV ccrZ
+#i regB @1_p_1 
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+regB:=(@1_p_1%256)
+#b ccrN:=BIT(@1_p_1,7)
+#b ccrZ:=((@1_p_1%256)=0)
+#b ccrV:=FALSE
+>
+
+//extended
+LDD
+@1
+#b ccrN ccrV ccrZ 
+#i regD @1 @1_p_1
+NO_BRANCH
+@next
+{}
+[5,5]
+<
+regA:=@1%256
+regB:=@1_p_1%256
+#b ccrN:=BIT(@1,7)
+#b ccrZ:=((@1%256)=0)&((@1_p_1%256)=0)
+#b ccrV:=FALSE
+>
+
+//extended
+LDX
+@1
+#b ccrN ccrV ccrZ 
+#i regX @1_p_1 @1
+NO_BRANCH
+@next
+{}
+[5,5]
+<
+regX:=(@1%256)*256+(@1_p_1%256)
+#b ccrN:=BIT(@1,7)
+#b ccrZ:=((@1%256)=0)&((@1_p_1%256)=0)
 #b ccrV:=FALSE
 >
 
@@ -156,250 +302,779 @@ regY:=(@1%65536)
 LDY
 @1
 #b ccrN ccrV ccrZ 
-#i regY @1 
+#i regY @1 @1_p_1
 NO_BRANCH
 @next
 {}
-[3,3]
+[5,5]
 <
-regY:=(@1%65536)
-#b ccrN:=BIT(@1,15)
-#b ccrZ:=((@1%65536)=0)
-#b ccrV:=FALSE
->
-
-//direct
-LDAA
-@1
-@1 BOUND 0 255
-#b ccrN ccrV ccrZ
-#i regD @1 
-NO_BRANCH
-@next
-{}
-[3,3]
-<
-regD:=(@1%256)*256+and(regD,255)
+regY:=(@1%256)*256+(@1_p_1%256)
 #b ccrN:=BIT(@1,7)
-#b ccrZ:=((@1%256)=0)
+#b ccrZ:=((@1%256)=0)&((@1_p_1%256)=0)
 #b ccrV:=FALSE
 >
 
-//direct
-STAB
-ADCTL
-#b ccrN ccrV ccrZ adc_ccf adc_scan adc_mult adc_start
-#b adc_cd adc_cc adc_cb adc_ca
-#i regD
+//register X indirect
+LDAA
+@1,x
+#b ccrN ccrV ccrZ MEM_READ 
+#i regA regX MEM_ADDR MEM_DATA
 NO_BRANCH
 @next
 {}
-[3,3]
+[4,4]
 <
-#b adc_ccf:=false
-#b adc_scan:=BIT(regD,5)
-#b adc_mult:=BIT(regD,4)
-#b adc_cd:=BIT(regD,3)
-#b adc_cc:=BIT(regD,2)
-#b adc_cb:=BIT(regD,1)
-#b adc_ca:=BIT(regD,0)
-#b ccrN:=BIT(regD,7)
-#b ccrZ:=(and(regD,255)=0)
+#b MEM_READ:=true
+MEM_ADDR:=regX+@1
+>
+{~MEM_READ}
+[0,0]
+<
+regA:=(MEM_DATA%256)
+#b ccrN:=BIT(MEM_DATA,7)
+#b ccrZ:=((MEM_DATA%256)=0)
 #b ccrV:=FALSE
-#b adc_start:=true
 >
 
-//direct
+//register X indirect
+LDAB
+@1,x
+#b ccrN ccrV ccrZ MEM_READ 
+#i regB regX MEM_ADDR MEM_DATA
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+#b MEM_READ:=true
+MEM_ADDR:=regX+@1
+>
+{~MEM_READ}
+[0,0]
+<
+regB:=(MEM_DATA%256)
+#b ccrN:=BIT(MEM_DATA,7)
+#b ccrZ:=((MEM_DATA%256)=0)
+#b ccrV:=FALSE
+>
+
+//register X indirect
+LDX
+@1,x
+#b ccrN ccrV ccrZ MEM_READ
+#i regX ld_TMP MEM_ADDR MEM_DATA
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+#b MEM_READ:=true
+MEM_ADDR:=regX+@1
+>
+{~MEM_READ}
+[0,0]
+<
+ldTMP:=MEM_DATA
+>
+{}
+[1,1]
+<
+#b MEM_READ:=true
+MEM_ADDR:=regX+@1+1
+>
+{~MEM_READ}
+[0,0]
+<
+regX:=(MEM_DATA)*256+ld_TMP
+#b ccrN:=BIT(MEM_DATA,7)
+#b ccrZ:=(MEM_DATA=0)&(ld_TMP=0)
+#b ccrV:=FALSE
+>
+
+
+////////////////////STORE INSTRUCTIONS//////////////////////////
+//extended
 STAA
 ADCTL
 #b ccrN ccrV ccrZ adc_ccf adc_scan adc_mult adc_start
 #b adc_cd adc_cc adc_cb adc_ca
-#i regD
+#i regA
 NO_BRANCH
 @next
 {}
-[3,3]
+[4,4]
 <
 #b adc_ccf:=false
-#b adc_scan:=BIT(regD,13)
-#b adc_mult:=BIT(regD,12)
-#b adc_cd:=BIT(regD,11)
-#b adc_cc:=BIT(regD,10)
-#b adc_cb:=BIT(regD,9)
-#b adc_ca:=BIT(regD,8)
-#b ccrN:=BIT(regD,15)
-#b ccrZ:=((regD/256)=0)
+#b adc_scan:=BIT(regA,5)
+#b adc_mult:=BIT(regA,4)
+#b adc_cd:=BIT(regA,3)
+#b adc_cc:=BIT(regA,2)
+#b adc_cb:=BIT(regA,1)
+#b adc_ca:=BIT(regA,0)
+#b ccrN:=BIT(regA,7)
+#b ccrZ:=(regA=0)
 #b ccrV:=FALSE
 #b adc_start:=true
 >
 
+//extended
+STAB
+ADCTL
+#b ccrN ccrV ccrZ adc_ccf adc_scan adc_mult adc_start
+#b adc_cd adc_cc adc_cb adc_ca
+#i regB
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+#b adc_ccf:=false
+#b adc_scan:=BIT(regB,5)
+#b adc_mult:=BIT(regB,4)
+#b adc_cd:=BIT(regB,3)
+#b adc_cc:=BIT(regB,2)
+#b adc_cb:=BIT(regB,1)
+#b adc_ca:=BIT(regB,0)
+#b ccrN:=BIT(regB,7)
+#b ccrZ:=(regB=0)
+#b ccrV:=FALSE
+#b adc_start:=true
+>
+
+//extended
+STAA
+@1
+@1 BOUND 0 255
+#b ccrN ccrV ccrZ 
+#i regA @1 
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+@1:=regA
+#b ccrN:=BIT(regA,7)
+#b ccrZ:=(regA=0)
+#b ccrV:=FALSE
+>
+
+//extended
 STAB
 @1
 @1 BOUND 0 255
 #b ccrN ccrV ccrZ 
-#i regD @1 
+#i regB @1 
 NO_BRANCH
 @next
 {}
-[3,3]
+[4,4]
 <
-@1:=and(regD,255)
-#b ccrN:=BIT(regD,7)
-#b ccrZ:=(and(regD,255)=0)
+@1:=regB
+#b ccrN:=BIT(regB,7)
+#b ccrZ:=(regB=0)
 #b ccrV:=FALSE
 >
 
-staa
-@1
+//extended; lower byte of 16-bit variable
+STAB
+@1+1
 @1 BOUND 0 255
 #b ccrN ccrV ccrZ 
-#i regD @1 
+#i regB @1_p_1 
 NO_BRANCH
 @next
 {}
-[3,3]
+[4,4]
 <
-@1:=(regD/256)
-#b ccrN:=BIT(regD,15)
-#b ccrZ:=((regD/256)=0)
+@1_p_1:=regB
+#b ccrN:=BIT(regB,7)
+#b ccrZ:=(regB=0)
 #b ccrV:=FALSE
 >
 
-std
+//extended
+STD
 @1
 #b ccrN ccrV ccrZ 
-#i regD @1 
+#i regA regB @1 @1_p_1
 NO_BRANCH
 @next
 {}
 [5,5]
 <
-@1:=regD
-#b ccrN:=BIT(regD,15)
-#b ccrZ:=(regD=0)
+@1:=regA
+@1_p_1:=regB
+#b ccrN:=BIT(regA,7)
+#b ccrZ:=(regA=0)&(regB=0)
 #b ccrV:=FALSE
 >
 
+//extended
 STX
 @1
 #b ccrN ccrV ccrZ 
-#i regX @1 
+#i regX @1 @1_p_1
 NO_BRANCH
 @next
 {}
 [5,5]
 <
-@1:=regX
+@1:=regX/256
+@1_p_1:=regX%256
 #b ccrN:=BIT(regX,15)
 #b ccrZ:=(regX=0)
 #b ccrV:=FALSE
 >
 
-//immediate
-ADDD
-#@1
-#b ccrC ccrN ccrV ccrZ
-#i regD
+//extended
+STY
+@1
+#b ccrN ccrV ccrZ 
+#i regY @1 @1_p_1
 NO_BRANCH
 @next
 {}
-[4,4]
+[6,6]
 <
-regD:=(regD+@1+65536)%65536
-#b ccrC:=(~BIT(regD,15)&BIT(@1,15))|(BIT(@1,15)&BIT((regD+@1+65536)%65536,15))|(BIT((regD+@1+65536)%65536,15)&~BIT(regD,15))
-#b ccrN:=BIT((regD+@1+65536)%65536,15)
-#b ccrZ:=((@1+regD)=0)
-#b ccrV:=(BIT(regD,15)&~BIT(@1,15)&~BIT((regD+@1+65536)%65536,15))|(~BIT(regD,15)&BIT(@1,15)&BIT((regD+@1+65536)%65536,15))
+@1:=regY/256
+@1_p_1:=regY%256
+#b ccrN:=BIT(regY,15)
+#b ccrZ:=(regY=0)
+#b ccrV:=FALSE
 >
 
-//direct
-ADDD
-@1
-#b ccrC ccrN ccrV ccrZ
-#i regD @1
+//register X indirect
+STAA
+@1,x
+@1 BOUND 0 255
+#b ccrN ccrV ccrZ MEM_WRITE
+#i regA regX @1 MEM_ADDR MEM_DATA
 NO_BRANCH
 @next
 {}
 [4,4]
 <
-regD:=(regD+@1+65536)%65536
-#b ccrC:=(~BIT(regD,15)&BIT(@1,15))|(BIT(@1,15)&BIT((regD+@1+65536)%65536,15))|(BIT((regD+@1+65536)%65536,15)&~BIT(regD,15))
-#b ccrN:=BIT((regD+@1+65536)%65536,15)
-#b ccrZ:=((@1+regD)=0)
-#b ccrV:=(BIT(regD,15)&~BIT(@1,15)&~BIT((regD+@1+65536)%65536,15))|(~BIT(regD,15)&BIT(@1,15)&BIT((regD+@1+65536)%65536,15))
+#b MEM_WRITE:=true
+MEM_ADDR:=regX+@1
+MEM_DATA:=regA
+#b ccrN:=BIT(regA,7)
+#b ccrZ:=(regA=0)
+#b ccrV:=FALSE
+>
+
+//register X indirect
+STAB
+@1,x
+@1 BOUND 0 255
+#b ccrN ccrV ccrZ MEM_WRITE
+#i regB regX @1 MEM_ADDR MEM_DATA
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+#b MEM_WRITE:=true
+MEM_ADDR:=regX+@1
+MEM_DATA:=regB
+#b ccrN:=BIT(regB,7)
+#b ccrZ:=(regB=0)
+#b ccrV:=FALSE
+>
+
+//register X indirect
+STD
+@1,x
+@1 BOUND 0 255
+#b ccrN ccrV ccrZ MEM_WRITE
+#i regA regB regX @1 MEM_ADDR MEM_DATA
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+#b MEM_WRITE:=true
+MEM_ADDR:=regX+@1
+MEM_DATA:=regA
+>
+{}
+[1,1]
+<
+#b MEM_WRITE:=true
+MEM_ADDR:=regX+@1+1
+MEM_DATA:=regB
+#b ccrN:=BIT(regA,7)
+#b ccrZ:=(regA=0)&(regB=0)
+#b ccrV:=FALSE
+>
+
+////////////////////ARITHMETIC INSTRUCTIONS//////////////////////////
+
+//inherent
+ABX
+
+#i regX regB
+NO_BRANCH
+@next
+{}
+[3,3]
+<
+regX:=(regX+regB)%65536
+>
+
+//inherent
+ABY
+
+#i regY regB
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+regY:=(regY+regB)%65536
 >
 
 //immediate
 ADDA
 #@1
 @1 BOUND -128 255
-#b ccrC ccrN ccrV ccrZ
-#i regD
+#b ccrC ccrN ccrV ccrZ 
+#i regA
 NO_BRANCH
 @next
 {}
-[1,1]
+[2,2]
 <
-regD:=((regD/256+@1+256)%256)*256+and(regD,255)
-#b ccrC:=(~BIT(regD/256,7)&BIT(@1,7))|(BIT(@1,7)&BIT((regD/256+@1+256)%256,7))|(BIT((regD/256+@1+256)%256,7)&~BIT(regD/256,7))
-#b ccrN:=BIT(@1+regD/256,7)
-#b ccrZ:=((@1+regD/256)=0)
-#b ccrV:=(BIT(regD/256,7)&~BIT(@1,7)&~BIT((regD/256+@1+256)%256,7))|(~BIT(regD/256,7)&BIT(@1,7)&BIT((regD/256+@1+256)%256,7))
+regA:=(regA+@1+256)%256
+#b ccrC:=(~BIT(regA,7)&BIT(@1,7))|(BIT(@1,7)&BIT((regA+@1+256)%256,7))|(BIT((regA+@1+256)%256,7)&~BIT(regA,7))
+#b ccrN:=BIT((@1+regA+256)%256,7)
+#b ccrZ:=(((@1+regA+256)%256)=0)
+#b ccrV:=(BIT(regA,7)&~BIT(@1,7)&~BIT((regA+@1+256)%256,7))|(~BIT(regA,7)&BIT(@1,7)&BIT((regA+@1+256)%256,7))
+>
+
+//immediate
+ADDA
+#-@1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ 
+#i regA
+NO_BRANCH
+@next
+{}
+[2,2]
+<
+regA:=(regA-@1+256)%256
+#b ccrC:=(~BIT(regA,7)&BIT(-@1,7))|(BIT(-@1,7)&BIT((regA-@1+256)%256,7))|(BIT((regA-@1+256)%256,7)&~BIT(regA,7))
+#b ccrN:=BIT((-@1+regA+256)%256,7)
+#b ccrZ:=(((-@1+regA+256)%256)=0)
+#b ccrV:=(BIT(regA,7)&~BIT(-@1,7)&~BIT((regA-@1+256)%256,7))|(~BIT(regA,7)&BIT(-@1,7)&BIT((regA-@1+256)%256,7))
 >
 
 //immediate
 ADDB
 #@1
 @1 BOUND -128 255
-#b ccrC ccrN ccrV ccrZ
-#i regD
+#b ccrC ccrN ccrV ccrZ 
+#i regB
 NO_BRANCH
 @next
 {}
-[1,1]
+[2,2]
 <
-regD:=and(regD,65280)+(and(regD,255)+@1+256)%256
-#b ccrC:=(~BIT(and(regD,255),7)&BIT(@1,7))|(BIT(@1,7)&BIT((and(regD,255)+@1+256)%256,7))|(BIT((and(regD,255)+@1+256)%256,7)&~BIT(and(regD,255),7))
-#b ccrN:=BIT(and(regD,255)+@1+256,7)
-#b ccrZ:=((and(regD,255)+@1+256)%256=0)
-#b ccrV:=(BIT(and(regD,255),7)&~BIT(@1,7)&~BIT((and(regD,255)+@1+256)%256,7))|(~BIT(and(regD,255),7)&BIT(@1,7)&BIT((and(regD,255)+@1+256)%256,7))
+regB:=(regB+@1+256)%256
+#b ccrC:=(~BIT(regB,7)&BIT(@1,7))|(BIT(@1,7)&BIT((regB+@1+256)%256,7))|(BIT((regB+@1+256)%256,7)&~BIT(regB,7))
+#b ccrN:=BIT((@1+regB+256)%256,7)
+#b ccrZ:=(((@1+regB+256)%256)=0)
+#b ccrV:=(BIT(regB,7)&~BIT(@1,7)&~BIT((regB+@1+256)%256,7))|(~BIT(regB,7)&BIT(@1,7)&BIT((regB+@1+256)%256,7))
 >
 
+//immediate
+ADDB
+#-@1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ 
+#i regB
+NO_BRANCH
+@next
+{}
+[2,2]
+<
+regB:=(regB-@1+256)%256
+#b ccrC:=(~BIT(regB,7)&BIT(-@1,7))|(BIT(-@1,7)&BIT((regB-@1+256)%256,7))|(BIT((regB-@1+256)%256,7)&~BIT(regB,7))
+#b ccrN:=BIT((-@1+regB+256)%256,7)
+#b ccrZ:=(((-@1+regB+256)%256)=0)
+#b ccrV:=(BIT(regB,7)&~BIT(-@1,7)&~BIT((regB-@1+256)%256,7))|(~BIT(regB,7)&BIT(-@1,7)&BIT((regB-@1+256)%256,7))
+>
 
-//direct
-SUBB
-@1
-@1 BOUND 0 255
+//immediate
+ADDD
+#@1
 #b ccrC ccrN ccrV ccrZ
-#i regD @1
+#i regA regB
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+regB:=(regB+(@1%256)+256)%256
+regA:=(regA+@1/256+(~BIT(regB,7)&BIT(@1%256,7))|(BIT(@1%256,7)&BIT((regB+@1%256+256)%256,7))|(BIT((regB+@1%256+256)%256,7)&~BIT(regB,7))+256)%256
+#b ccrC:=(~BIT(((regA*256)+regB),15)&BIT(@1,15))|(BIT(@1,15)&BIT((((regA*256)+regB)+@1+65536)%65536,15))|(BIT((((regA*256)+regB)+@1+65536)%65536,15)&~BIT(((regA*256)+regB),15))
+#b ccrN:=BIT((((regA*256)+regB)+@1+65536)%65536,15)
+#b ccrZ:=(((@1+(regA*256)+regB)%65536)=0)
+#b ccrV:=(BIT(((regA*256)+regB),15)&~BIT(@1,15)&~BIT((((regA*256)+regB)+@1+65536)%65536,15))|(~BIT(((regA*256)+regB),15)&BIT(@1,15)&BIT((((regA*256)+regB)+@1+65536)%65536,15))
+>
+
+//immediate
+ADDD
+#-@1
+#b ccrC ccrN ccrV ccrZ
+#i regA regB
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+regB:=(regB+(-@1%256)+256)%256
+regA:=(regA-@1/256+(~BIT(regB,7)&BIT(-@1%256,7))|(BIT(-@1%256,7)&BIT((regB-@1%256+256)%256,7))|(BIT((regB-@1%256+256)%256,7)&~BIT(regB,7))+256)%256
+#b ccrC:=(~BIT(((regA*256)+regB),15)&BIT(-@1,15))|(BIT(-@1,15)&BIT((((regA*256)+regB)-@1+65536)%65536,15))|(BIT((((regA*256)+regB)-@1+65536)%65536,15)&~BIT(((regA*256)+regB),15))
+#b ccrN:=BIT((((regA*256)+regB)-@1+65536)%65536,15)
+#b ccrZ:=(((-@1+(regA*256)+regB)%65536)=0)
+#b ccrV:=(BIT(((regA*256)+regB),15)&~BIT(-@1,15)&~BIT((((regA*256)+regB)-@1+65536)%65536,15))|(~BIT(((regA*256)+regB),15)&BIT(-@1,15)&BIT((((regA*256)+regB)-@1+65536)%65536,15))
+>
+
+//extended
+ADDA
+@1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ 
+#i regA @1
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+regA:=(regA+@1+256)%256
+#b ccrC:=(~BIT(regA,7)&BIT(@1,7))|(BIT(@1,7)&BIT((regA+@1+256)%256,7))|(BIT((regA+@1+256)%256,7)&~BIT(regA,7))
+#b ccrN:=BIT((@1+regA+256)%256,7)
+#b ccrZ:=(((@1+regA+256)%256)=0)
+#b ccrV:=(BIT(regA,7)&~BIT(@1,7)&~BIT((regA+@1+256)%256,7))|(~BIT(regA,7)&BIT(@1,7)&BIT((regA+@1+256)%256,7))
+>
+
+//extended
+ADDA
+@1+1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ 
+#i regA @1_p_1
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+regA:=(regA+@1_p_1+256)%256
+#b ccrC:=(~BIT(regA,7)&BIT(@1_p_1,7))|(BIT(@1_p_1,7)&BIT((regA+@1_p_1+256)%256,7))|(BIT((regA+@1_p_1+256)%256,7)&~BIT(regA,7))
+#b ccrN:=BIT((@1_p_1+regA+256)%256,7)
+#b ccrZ:=(((@1_p_1+regA+256)%256)=0)
+#b ccrV:=(BIT(regA,7)&~BIT(@1_p_1,7)&~BIT((regA+@1_p_1+256)%256,7))|(~BIT(regA,7)&BIT(@1_p_1,7)&BIT((regA+@1_p_1+256)%256,7))
+>
+
+//extended
+ADDB
+@1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ 
+#i regB @1
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+regB:=(regB+@1+256)%256
+#b ccrC:=(~BIT(regB,7)&BIT(@1,7))|(BIT(@1,7)&BIT((regB+@1+256)%256,7))|(BIT((regB+@1+256)%256,7)&~BIT(regB,7))
+#b ccrN:=BIT((@1+regB+256)%256,7)
+#b ccrZ:=(((@1+regB+256)%256)=0)
+#b ccrV:=(BIT(regB,7)&~BIT(@1,7)&~BIT((regB+@1+256)%256,7))|(~BIT(regB,7)&BIT(@1,7)&BIT((regB+@1+256)%256,7))
+>
+
+//extended
+ADDB
+@1+1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ 
+#i regB @1_p_1
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+regB:=(regB+@1_p_1+256)%256
+#b ccrC:=(~BIT(regB,7)&BIT(@1_p_1,7))|(BIT(@1_p_1,7)&BIT((regB+@1_p_1+256)%256,7))|(BIT((regB+@1_p_1+256)%256,7)&~BIT(regB,7))
+#b ccrN:=BIT((@1_p_1+regB+256)%256,7)
+#b ccrZ:=(((@1_p_1+regB+256)%256)=0)
+#b ccrV:=(BIT(regB,7)&~BIT(@1_p_1,7)&~BIT((regB+@1_p_1+256)%256,7))|(~BIT(regB,7)&BIT(@1_p_1,7)&BIT((regB+@1_p_1+256)%256,7))
+>
+
+//extended
+ADDD
+@1
+#b ccrC ccrN ccrV ccrZ
+#i regA regB @1 @1_p_1
+NO_BRANCH
+@next
+{}
+[6,6]
+<
+regB:=(regB+@1_p_1+256)%256
+regA:=(regA+@1+(~BIT(regB,7)&BIT(@1_p_1,7))|(BIT(@1_p_1,7)&BIT((regB+@1_p_1+256)%256,7))|(BIT((regB+@1_p_1+256)%256,7)&~BIT(regB,7))+256)%256
+#b ccrC:=(~BIT(((regA*256)+regB),15)&BIT((@1*256)+@1_p_1,15))|(BIT((@1*256)+@1_p_1,15)&BIT((((regA*256)+regB)+(@1*256)+@1_p_1+65536)%65536,15))|(BIT((((regA*256)+regB)+(@1*256)+@1_p_1+65536)%65536,15)&~BIT(((regA*256)+regB),15))
+#b ccrN:=BIT((((regA*256)+regB)+(@1*256)+@1_p_1+65536)%65536,15)
+#b ccrZ:=((((@1*256)+@1_p_1+(regA*256)+regB)%65536)=0)
+#b ccrV:=(BIT(((regA*256)+regB),15)&~BIT((@1*256)+@1_p_1,15)&~BIT((((regA*256)+regB)+(@1*256)+@1_p_1+65536)%65536,15))|(~BIT(((regA*256)+regB),15)&BIT((@1*256)+@1_p_1,15)&BIT((((regA*256)+regB)+(@1*256)+@1_p_1+65536)%65536,15))
+>
+
+//immediate
+ADCA
+#@1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ ccrH
+#i regA
+NO_BRANCH
+@next
+{}
+[2,2]
+<
+regA:=((regA+@1+ccrC+256)%256)
+#b ccrC:=(~BIT(regA,7)&BIT(@1,7))|(BIT(@1,7)&BIT((regA+@1+ccrC+256)%256,7))|(BIT((regA+@1+ccrC+256)%256,7)&~BIT(regA,7))
+#b ccrH:=(~BIT(regA,3)&BIT(@1,3))|(BIT(@1,3)&BIT((regA+@1+ccrC+256)%256,3))|(BIT((regA+@1+ccrC+256)%256,3)&~BIT(regA,3))
+#b ccrN:=BIT((@1+ccrC+regA+256)%256,7)
+#b ccrZ:=(((@1+ccrC+regA+256)%256)=0)
+#b ccrV:=(BIT(regA,7)&~BIT(@1,7)&~BIT((regA+@1+ccrC+256)%256,7))|(~BIT(regA,7)&BIT(@1,7)&BIT((regA+@1+ccrC+256)%256,7))
+>
+
+//inherent
+CLRA
+
+#i regA
+NO_BRANCH
+@next
+{}
+[2,2]
+<
+regA:=0
+#b ccrN:=FALSE
+#b ccrZ:=TRUE
+#b ccrV:=FALSE
+#b ccrC:=FALSE
+>
+
+//inherent
+CLRB
+
+#i regB
+NO_BRANCH
+@next
+{}
+[2,2]
+<
+regB:=0
+#b ccrN:=FALSE
+#b ccrZ:=TRUE
+#b ccrV:=FALSE
+#b ccrC:=FALSE
+>
+
+//EXTENDED
+CLR
+@1
+#i @1
+NO_BRANCH
+@next
+{}
+[6,6]
+<
+@1:=0
+#b ccrN:=FALSE
+#b ccrZ:=TRUE
+#b ccrV:=FALSE
+#b ccrC:=FALSE
+>
+
+//EXTENDED
+CLR
+@1+1
+#i @1_p_1
+NO_BRANCH
+@next
+{}
+[6,6]
+<
+@1_p_1:=0
+#b ccrN:=FALSE
+#b ccrZ:=TRUE
+#b ccrV:=FALSE
+#b ccrC:=FALSE
+>
+
+//register X indirect
+CLR
+@1,x
+@1 BOUND 0 255
+#b ccrN ccrV ccrZ MEM_WRITE
+#i regX @1 MEM_ADDR MEM_DATA
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+#b MEM_WRITE:=true
+MEM_ADDR:=regX+@1
+MEM_DATA:=0
+#b ccrN:=FALSE
+#b ccrZ:=TRUE
+#b ccrV:=FALSE
+#b ccrC:=FALSE
+>
+
+//immediate
+CMPA
+#@1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ
+#i regA
+NO_BRANCH
+@next
+{}
+[2,2]
+<
+#b ccrC:=(~BIT(regA,7)&BIT(@1,7))|(BIT(@1,7)&BIT((regA-@1+256)%256,7))|(BIT((regA-@1+256)%256,7)&~BIT(regA,7))
+#b ccrN:=BIT((regA-@1+256)%256,7)
+#b ccrZ:=((regA-@1+256)%256=0)
+#b ccrV:=(BIT(regA,7)&~BIT(@1,7)&~BIT((regA-@1+256)%256,7))|(~BIT(regA,7)&BIT(@1,7)&BIT((regA-@1+256)%256,7))
+>
+
+//extended
+CMPA
+@1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ
+#i regA @1
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+#b ccrC:=(~BIT(regA,7)&BIT(@1,7))|(BIT(@1,7)&BIT((regA-@1+256)%256,7))|(BIT((regA-@1+256)%256,7)&~BIT(regA,7))
+#b ccrN:=BIT((regA-@1+256)%256,7)
+#b ccrZ:=((regA-@1+256)%256=0)
+#b ccrV:=(BIT(regA,7)&~BIT(@1,7)&~BIT((regA-@1+256)%256,7))|(~BIT(regA,7)&BIT(@1,7)&BIT((regA-@1+256)%256,7))
+>
+
+//immediate
+CMPB
+#@1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ
+#i regB
+NO_BRANCH
+@next
+{}
+[2,2]
+<
+#b ccrC:=(~BIT(regB,7)&BIT(@1,7))|(BIT(@1,7)&BIT((regB-@1+256)%256,7))|(BIT((regB-@1+256)%256,7)&~BIT(regB,7))
+#b ccrN:=BIT((regB-@1+256)%256,7)
+#b ccrZ:=((regB-@1+256)%256=0)
+#b ccrV:=(BIT(regB,7)&~BIT(@1,7)&~BIT((regB-@1+256)%256,7))|(~BIT(regB,7)&BIT(@1,7)&BIT((regB-@1+256)%256,7))
+>
+
+//extended
+CMPB
+@1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ
+#i regB @1
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+#b ccrC:=(~BIT(regB,7)&BIT(@1,7))|(BIT(@1,7)&BIT((regB-@1+256)%256,7))|(BIT((regB-@1+256)%256,7)&~BIT(regB,7))
+#b ccrN:=BIT((regB-@1+256)%256,7)
+#b ccrZ:=((regB-@1+256)%256=0)
+#b ccrV:=(BIT(regB,7)&~BIT(@1,7)&~BIT((regB-@1+256)%256,7))|(~BIT(regB,7)&BIT(@1,7)&BIT((regB-@1+256)%256,7))
+>
+
+//extended
+CMPB
+@1+1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ
+#i regB @1_p_1
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+#b ccrC:=(~BIT(regB,7)&BIT(@1_p_1,7))|(BIT(@1_p_1,7)&BIT((regB-@1_p_1+256)%256,7))|(BIT((regB-@1_p_1+256)%256,7)&~BIT(regB,7))
+#b ccrN:=BIT((regB-@1_p_1+256)%256,7)
+#b ccrZ:=((regB-@1_p_1+256)%256=0)
+#b ccrV:=(BIT(regB,7)&~BIT(@1_p_1,7)&~BIT((regB-@1_p_1+256)%256,7))|(~BIT(regB,7)&BIT(@1_p_1,7)&BIT((regB-@1_p_1+256)%256,7))
+>
+
+//immediate
+CPD
+#@1
+#b ccrC ccrN ccrV ccrZ
+#i regA regB
+NO_BRANCH
+@next
+{}
+[5,5]
+<
+#b ccrC:=(~BIT((regA*256)+regB,15)&BIT(@1,15))|(BIT(@1,15)&BIT(((regA*256)+regB-@1+65536)%65536,15))|(BIT(((regA*256)+regB-@1+65536)%65536,15)&~BIT((regA*256)+regB,15))
+#b ccrN:=BIT(((regA*256)+regB-@1+65536)%65536,15)
+#b ccrZ:=((((regA*256)+regB-@1+65536)%65536)=0)
+#b ccrV:=(BIT((regA*256)+regB,15)&~BIT(@1,15)&~BIT(((regA*256)+regB-@1+65536)%65536,15))|(~BIT((regA*256)+regB,15)&BIT(@1,15)&BIT(((regA*256)+regB-@1+65536)%65536,15))
+>
+
+//extended
+CPD
+@1
+#b ccrC ccrN ccrV ccrZ
+#i regA regB @1 @1_p_1
+NO_BRANCH
+@next
+{}
+[7,7]
+<
+#b ccrC:=(~BIT((regA*256)+regB,15)&BIT(((@1*256)+@1_p_1),15))|(BIT(((@1*256)+@1_p_1),15)&BIT(((regA*256)+regB-((@1*256)+@1_p_1)+65536)%65536,15))|(BIT(((regA*256)+regB-((@1*256)+@1_p_1)+65536)%65536,15)&~BIT((regA*256)+regB,15))
+#b ccrN:=BIT(((regA*256)+regB-((@1*256)+@1_p_1)+65536)%65536,15)
+#b ccrZ:=((((regA*256)+regB-((@1*256)+@1_p_1)+65536)%65536)=0)
+#b ccrV:=(BIT((regA*256)+regB,15)&~BIT(((@1*256)+@1_p_1),15)&~BIT(((regA*256)+regB-((@1*256)+@1_p_1)+65536)%65536,15))|(~BIT((regA*256)+regB,15)&BIT(((@1*256)+@1_p_1),15)&BIT(((regA*256)+regB-((@1*256)+@1_p_1)+65536)%65536,15))
+>
+
+//inherent
+DES
+
+#i regS
 NO_BRANCH
 @next
 {}
 [3,3]
 <
-regD:=and(regD,65280)+(and(regD,255)-@1+256)%256
-#b ccrC:=(~BIT(and(regD,255),7)&BIT(@1,7))|(BIT(@1,7)&BIT((and(regD,255)-@1+256)%256,7))|(BIT((and(regD,255)-@1+256)%256,7)&~BIT(and(regD,255),7))
-#b ccrN:=BIT((and(regD,255)-@1+256)%256,7)
-#b ccrZ:=(((and(regD,255)-@1+256)%256)=0)
-#b ccrV:=(BIT(and(regD,255),7)&~BIT(@1,7)&~BIT((and(regD,255)-@1+256)%256,7))|(~BIT(and(regD,255),7)&BIT(@1,7)&BIT((and(regD,255)-@1+256)%256,7))
+regS:=(regS+65535)%65536
 >
 
-//immediate
-SUBB
-#@1
-@1 BOUND 0 255
-#b ccrC ccrN ccrV ccrZ
-#i regD
+//inherent
+DEX
+
+#b ccrZ
+#i regX
 NO_BRANCH
 @next
 {}
-[1,1]
+[3,3]
 <
-regD:=and(regD,65280)+((and(regD,255)-@1+256)%256)
-#b ccrC:=(~BIT(and(regD,255),7)&BIT(@1,7))|(BIT(@1,7)&BIT((and(regD,255)-@1+256)%256,7))|(BIT((and(regD,255)-@1+256)%256,7)&~BIT(and(regD,255),7))
-#b ccrN:=BIT((and(regD,255)-@1+256)%256,7)
-#b ccrZ:=(((and(regD,255)-@1+256)%256)=0)
-#b ccrV:=(BIT(and(regD,255),7)&~BIT(@1,7)&~BIT((and(regD,255)-@1+256)%256,7))|(~BIT(and(regD,255),7)&BIT(@1,7)&BIT((and(regD,255)-@1+256)%256,7))
+regX:=(regX+65535)%65536
+#b ccrZ:=((regX+65535)%65536=0)
 >
 
 //inherent
@@ -416,125 +1091,333 @@ regY:=(regY+65535)%65536
 #b ccrZ:=((regY+65535)%65536=0)
 >
 
+
+//inherent
+INS
+
+#i regS
+NO_BRANCH
+@next
+{}
+[3,3]
+<
+regS:=(regS+1)%65536
+>
+
+//inherent
+INX
+
+#b ccrZ
+#i regX
+NO_BRANCH
+@next
+{}
+[3,3]
+<
+regX:=(regX+1)%65536
+#b ccrZ:=((regX+1)%65536=0)
+>
+
+//inherent
+INY
+
+#b ccrZ
+#i regY
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+regY:=(regY+1)%65536
+#b ccrZ:=((regY+1)%65536=0)
+>
+
 //inherent
 SBA
 
 #b ccrC ccrN ccrV ccrZ
-#i regD 
+#i regA regB
 NO_BRANCH
 @next
 {}
 [2,2]
 <
-regD:=(regD/256-and(regD,255)+256)%256*256+and(regD,255)
-#b ccrC:=(~BIT(regD/256,7)&BIT(and(regD,255),7))|(BIT(and(regD,255),7)&BIT((regD/256-and(regD,255)+256)%256,7))|(BIT((regD/256-and(regD,255)+256)%256,7)&~BIT(regD/256,7))
-#b ccrN:=BIT((regD/256-and(regD,255)+256)%256,7)
-#b ccrZ:=(((regD/256-and(regD,255)+256)%256)=0)
-#b ccrV:=(BIT(regD/256,7)&~BIT(and(regD,255),7)&~BIT((regD/256-and(regD,255)+256)%256,7))|(~BIT(regD/256,7)&BIT(and(regD,255),7)&BIT((regD/256-and(regD,255)+256)%256,7))
+regA:=(regA-regB+256)%256
+#b ccrC:=(~BIT(regA,7)&BIT(regB,7))|(BIT(regB,7)&BIT((regA-regB+256)%256,7))|(BIT((regA-regB+256)%256,7)&~BIT(regA,7))
+#b ccrN:=BIT((regA-regB+256)%256,7)
+#b ccrZ:=(((regA-regB+256)%256)=0)
+#b ccrV:=(BIT(regA,7)&~BIT(regB,7)&~BIT((regA-regB+256)%256,7))|(~BIT(regA,7)&BIT(regB,7)&BIT((regA-regB+256)%256,7))
 >
 
-
-
 //immediate
-andb
+SUBA
 #@1
 @1 BOUND -128 255
 #b ccrC ccrN ccrV ccrZ
-#i regD
+#i regA 
 NO_BRANCH
 @next
 {}
-[1,1]
+[2,2]
 <
-regD:=and(regD,65280)+and(and(regD,255),@1)
-#b ccrN:=BIT(and(and(regD,255),@1),7)
-#b ccrZ:=(and(@1,and(regD,255))=0)
+regA:=(regA-@1+256)%256
+#b ccrC:=(~BIT(regA,7)&BIT(@1,7))|(BIT(@1,7)&BIT((regA-@1+256)%256,7))|(BIT((regA-@1+256)%256,7)&~BIT(regA,7))
+#b ccrN:=BIT((regA-@1+256)%256,7)
+#b ccrZ:=((regA-@1+256)%256=0)
+#b ccrV:=(BIT(regA,7)&~BIT(@1,7)&~BIT((regA-@1+256)%256,7))|(~BIT(regA,7)&BIT(@1,7)&BIT((regA-@1+256)%256,7))
+>
+
+//extended
+SUBA
+@1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ
+#i regA @1
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+regA:=(regA-@1+256)%256
+#b ccrC:=(~BIT(regA,7)&BIT(@1,7))|(BIT(@1,7)&BIT((regA-@1+256)%256,7))|(BIT((regA-@1+256)%256,7)&~BIT(regA,7))
+#b ccrN:=BIT((regA-@1+256)%256,7)
+#b ccrZ:=((regA-@1+256)%256=0)
+#b ccrV:=(BIT(regA,7)&~BIT(@1,7)&~BIT((regA-@1+256)%256,7))|(~BIT(regA,7)&BIT(@1,7)&BIT((regA-@1+256)%256,7))
+>
+
+//immediate
+SUBB
+#@1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ
+#i regB 
+NO_BRANCH
+@next
+{}
+[2,2]
+<
+regB:=(regB-@1+256)%256
+#b ccrC:=(~BIT(regB,7)&BIT(@1,7))|(BIT(@1,7)&BIT((regB-@1+256)%256,7))|(BIT((regB-@1+256)%256,7)&~BIT(regB,7))
+#b ccrN:=BIT((regB-@1+256)%256,7)
+#b ccrZ:=((regB-@1+256)%256=0)
+#b ccrV:=(BIT(regB,7)&~BIT(@1,7)&~BIT((regB-@1+256)%256,7))|(~BIT(regB,7)&BIT(@1,7)&BIT((regB-@1+256)%256,7))
+>
+
+//extended
+SUBB
+@1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ
+#i regB @1
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+regB:=(regB-@1+256)%256
+#b ccrC:=(~BIT(regB,7)&BIT(@1,7))|(BIT(@1,7)&BIT((regB-@1+256)%256,7))|(BIT((regB-@1+256)%256,7)&~BIT(regB,7))
+#b ccrN:=BIT((regB-@1+256)%256,7)
+#b ccrZ:=((regB-@1+256)%256=0)
+#b ccrV:=(BIT(regB,7)&~BIT(@1,7)&~BIT((regB-@1+256)%256,7))|(~BIT(regB,7)&BIT(@1,7)&BIT((regB-@1+256)%256,7))
+>
+
+//extended
+SUBD
+@1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ
+#i regA regB @1 @1_p_1
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+regB:=(regB-@1_p_1+256)%256
+regA:=(regA-@1-((~BIT(regB,7)&BIT(@1_p_1,7))|(BIT(@1_p_1,7)&BIT((regB-@1_p_1+256)%256,7))|(BIT((regB-@1_p_1+256)%256,7)&~BIT(regB,7)))+256)%256
+#b ccrC:=(~BIT(regA,7)&BIT(@1,7))|(BIT(@1,7)&BIT((regA-@1+256)%256,7))|(BIT((regA-@1+256)%256,7)&~BIT(regA,7))
+#b ccrN:=BIT(((regA*256)+regB-((@1*256)+@1_p_1)+256)%256,7)
+#b ccrZ:=(((regA*256)+regB-((@1*256)+@1_p_1)+256)%256=0)
+#b ccrV:=(BIT((regA*256)+regB,7)&~BIT((@1*256)+@1_p_1,7)&~BIT(((regA*256)+regB-((@1*256)+@1_p_1)+256)%256,7))|(~BIT((regA*256)+regB,7)&BIT((@1*256)+@1_p_1,7)&BIT(((regA*256)+regB-((@1*256)+@1_p_1)+256)%256,7))
+>
+
+
+////////////////////LOGICAL INSTRUCTIONS//////////////////////////
+
+//immediate
+ANDA
+#@1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ
+#i regA
+NO_BRANCH
+@next
+{}
+[2,2]
+<
+regA:=AND(regA,@1)
+#b ccrN:=BIT(AND(regA,@1),7)
+#b ccrZ:=(AND(@1,regA)=0)
+#b ccrV:=false
+>
+
+//extended
+ANDA
+@1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ
+#i regA @1
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+regA:=AND(regA,@1)
+#b ccrN:=BIT(AND(regA,@1),7)
+#b ccrZ:=(AND(@1,regA)=0)
+#b ccrV:=false
+>
+
+//immediate
+ANDB
+#@1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ
+#i regB
+NO_BRANCH
+@next
+{}
+[2,2]
+<
+regB:=AND(regB,@1)
+#b ccrN:=BIT(AND(regB,@1),7)
+#b ccrZ:=(AND(@1,regB)=0)
+#b ccrV:=false
+>
+
+//extended
+ANDB
+@1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ
+#i regB @1
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+regB:=AND(regB,@1)
+#b ccrN:=BIT(AND(regB,@1),7)
+#b ccrZ:=(AND(@1,regB)=0)
 #b ccrV:=false
 >
 
 //direct
-orab
-@1
+ORAA
+#@1
 #b ccrC ccrN ccrV ccrZ
-#i regD @1
+#i regA
 NO_BRANCH
 @next
 {}
 [1,1]
 <
-regD:=and(regD,65280)+or(and(regD,255),@1)
-#b ccrN:=BIT(or(@1,and(regD,255))7)
-#b ccrZ:=(or(@1,and(regD,255))=0)
+regA:=OR(regA,@1)
+#b ccrN:=BIT(OR(@1,regA),7)
+#b ccrZ:=(or(@1,regA)=0)
 #b ccrV:=false
 >
 
-
-//immediate
-cmpa
-#@1
-@1 BOUND -128 255
+//extended
+ORAA
+@1
 #b ccrC ccrN ccrV ccrZ
-#i regD
+#i regA @1
 NO_BRANCH
 @next
 {}
 [1,1]
 <
-#b ccrC:=(~BIT(regD/256,7)&BIT(@1,7))|(BIT(@1,7)&BIT((regD/256-@1+256)%256,7))|(BIT((regD/256-@1+256)%256,7)&~BIT(regD/256,7))
-#b ccrN:=BIT((egD/256-@1+256)%256,7)
-#b ccrZ:=((regD/256-@1+256)%256=0)
-#b ccrV:=(BIT(regD/256,7)&~BIT(@1,7)&~BIT((regD/256-@1+256)%256,7))|(~BIT(regD/256,7)&BIT(@1,7)&BIT((regD/256-@1+256)%256,7))
->
-
-//immediate
-cmpb
-#@1
-@1 BOUND -128 255
-#b ccrC ccrN ccrV ccrZ
-#i regD
-NO_BRANCH
-@next
-{}
-[1,1]
-<
-#b ccrC:=(~BIT(and(regD,255),7)&BIT(@1,7))|(BIT(@1,7)&BIT((and(regD,255)-@1+256)%256,7))|(BIT((and(regD,255)-@1+256)%256,7)&~BIT(and(regD,255),7))
-#b ccrN:=BIT((and(regD,255)-@1+256)%256,7)
-#b ccrZ:=(((and(regD,255)-@1+256)%256)=0)
-#b ccrV:=(BIT(and(regD,255),7)&~BIT(@1,7)&~BIT((and(regD,255)-@1+256)%256,7))|(~BIT(and(regD,255),7)&BIT(@1,7)&BIT((and(regD,255)-@1+256)%256,7))
+regA:=OR(regA,@1)
+#b ccrN:=BIT(OR(@1,regA),7)
+#b ccrZ:=(or(@1,regA)=0)
+#b ccrV:=false
 >
 
 //direct
-cmpb
-@1
-@1 BOUND -128 255
+ORAB
+#@1
 #b ccrC ccrN ccrV ccrZ
-#i regD @1
+#i regB
 NO_BRANCH
 @next
 {}
 [1,1]
 <
-#b ccrC:=(~BIT(and(regD,255),7)&BIT(@1,7))|(BIT(@1,7)&BIT((and(regD,255)-@1+256)%256,7))|(BIT((and(regD,255)-@1+256)%256,7)&~BIT(and(regD,255),7))
-#b ccrN:=BIT((and(regD,255)-@1+256)%256,7)
-#b ccrZ:=(((and(regD,255)-@1+256)%256)=0)
-#b ccrV:=(BIT(and(regD,255),7)&~BIT(@1,7)&~BIT((and(regD,255)-@1+256)%256,7))|(~BIT(and(regD,255),7)&BIT(@1,7)&BIT((and(regD,255)-@1+256)%256,7))
+regB:=OR(regB,@1)
+#b ccrN:=BIT(OR(@1,regB),7)
+#b ccrZ:=(or(@1,regB)=0)
+#b ccrV:=false
 >
 
-//direct
-cpd
+//extended
+ORAB
 @1
 #b ccrC ccrN ccrV ccrZ
-#i regD @1
+#i regB @1
 NO_BRANCH
 @next
 {}
 [1,1]
 <
-#b ccrC:=(~BIT(regD,15)&BIT(@1,15))|(BIT(@1,15)&BIT((regD-@1+65536)%65536,15))|(BIT((regD-@1+65536)%65536,15)&~BIT(regD,15))
-#b ccrN:=BIT((regD-@1+65536)%65536,15)
-#b ccrZ:=(((regD-@1+65536)%65536)=0)
-#b ccrV:=(BIT(regD,15)&~BIT(@1,15)&~BIT((regD-@1+65536)%65536,15))|(~BIT(regD,15)&BIT(@1,15)&BIT((regD-@1+65536)%65536,15))
+regB:=OR(regB,@1)
+#b ccrN:=BIT(OR(@1,regB),7)
+#b ccrZ:=(or(@1,regB)=0)
+#b ccrV:=false
 >
+
+////////////////////MOVE INSTRUCTIONS//////////////////////////
+
+//inherent
+XGDX
+
+#i regX regA regB
+NO_BRANCH
+@next
+{}
+[3,3]
+<
+regX:=regA*256+regB
+regA:=regX/256
+regB:=regX%256
+>
+
+//inherent
+XGDY
+
+#i regY regA regB
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+regY:=regA*256+regB
+regA:=regY/256
+regB:=regY%256
+>
+
+//inherent
+TSX
+
+#i regX regSP 
+NO_BRANCH
+@next
+{}
+[3,3]
+<
+regX:=(regSP+1)%65536
+>
+
+////////////////////BRANCH INSTRUCTIONS//////////////////////////
 
 BRA
 @1
@@ -553,6 +1436,7 @@ NO_BRANCH
 {}
 [3,3]
 <
+regSP:=(regSP+65534)%65536
 #b @1_1:=TRUE
 >
 {~@1_1}
@@ -656,6 +1540,87 @@ NO_BRANCH
 <
 >
 
+RTS
+@1 
+#b @1_1
+BRANCH
+@1_top
+{}
+[1,1]
+<
+regSP:=regSP+2
+#b @1_1:=FALSE
+>
+
+////////////////////STACK INSTRUCTIONS//////////////////////////
+
+//Stack Pointer Indexed
+pshx
+
+#b MEM_WRITE
+#i regSP MEM_ADDR MEM_DATA
+NO_BRANCH
+@next
+{}
+[3,3]
+<
+#b MEM_WRITE:=true
+MEM_ADDR:=regSP
+MEM_DATA:=regX%256
+regSP:=(regSP+65535)%65536
+>
+{}
+[1,1]
+<
+#b MEM_WRITE:=true
+MEM_ADDR:=regSP
+MEM_DATA:=regX/256
+regSP:=(regSP+65535)%65536
+>
+
+//Stack Pointer Indexed
+pulx
+
+#b MEM_READ
+#i regSP MEM_ADDR MEM_DATA
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+#b MEM_READ:=true
+MEM_ADDR:=(regSP+1)%65536
+regSP:=(regSP+1)%65536
+>
+{~MEM_READ}
+[0,0]
+<
+regX:=MEM_DATA*256
+>
+{}
+[1,1]
+<
+#b MEM_READ:=true
+MEM_ADDR:=(regSP+1)%65536
+regSP:=(regSP+1)%65536
+>
+{~MEM_READ}
+[0,0]
+<
+regX:=regX+MEM_DATA
+>
+
+////////////////////PSEUDO INSTRUCTIONS//////////////////////////
+subroutine
+@1
+#b @1_1
+NO_BRANCH
+@next
+{@1_1}
+[0,0]
+<
+>
+
 //pragma "set_pred"
 set_pred
 @1
@@ -691,60 +1656,3 @@ NO_BRANCH
 <
 >
 
-RTS
-@1 
-#b @1_1
-BRANCH
-@1_top
-{}
-[1,1]
-<
-#b @1_1:=FALSE
->
-
-//THIS IS A STUB!!  NO ACTUAL STORAGE OCCURS
-pshx
-
-#i regSP
-NO_BRANCH
-@next
-{}
-[4,4]
-<
-regSP:=(regSP+65534)%65536
->
-
-//THIS IS A STUB!!  NO ACTUAL STORAGE OCCURS
-pulx
-
-#i regSP
-NO_BRANCH
-@next
-{}
-[4,4]
-<
-regSP:=(regSP+2)%65536
->
-
-
-
-subroutine
-@1
-#b @1_1
-NO_BRANCH
-@next
-{@1_1}
-[0,0]
-<
->
-
-CLR
-@1
-#i @1
-NO_BRANCH
-@next
-{}
-[6,6]
-<
-@1:=0
->
