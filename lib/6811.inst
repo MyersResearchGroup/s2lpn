@@ -7,7 +7,7 @@
 // variables accessed by 16 bit loads are assumed to have two 
 // halves, i.e foo and foo_p_1.  foo_p_1 is the low order byte.
 // 
-//
+// 0xFF00=65280
 //delimiters
 #,+\t-\ []
 //merge code
@@ -92,7 +92,7 @@ NO_BRANCH
 {}
 [3,3]
 <
-regA:=(@1/256)%256
+regA:=(and(@1,65280)/256)%256
 regB:=@1%256
 #b ccrN:=BIT(@1,15)
 #b ccrZ:=((@1%65536)=0)
@@ -109,7 +109,7 @@ NO_BRANCH
 {}
 [3,3]
 <
-regA:=(-@1/256)%256
+regA:=-((and(@1,65280)/256)%256)
 regB:=-@1%256
 #b ccrN:=BIT(-@1,15)
 #b ccrZ:=((-@1%65536)=0)
@@ -536,7 +536,7 @@ NO_BRANCH
 {}
 [6,6]
 <
-@1:=regY/256
+@1:=and(regY,65280)/256
 @1_p_1:=regY%256
 #b ccrN:=BIT(regY,15)
 #b ccrZ:=(regY=0)
@@ -716,7 +716,7 @@ NO_BRANCH
 [4,4]
 <
 regB:=(regB+(@1%256)+256)%256
-regA:=(regA+@1/256+(~BIT(regB,7)&BIT(@1%256,7))|(BIT(@1%256,7)&BIT((regB+@1%256+256)%256,7))|(BIT((regB+@1%256+256)%256,7)&~BIT(regB,7))+256)%256
+regA:=(regA+and(@1,65280)/256+(~BIT(regB,7)&BIT(@1%256,7))|(BIT(@1%256,7)&BIT((regB+@1%256+256)%256,7))|(BIT((regB+@1%256+256)%256,7)&~BIT(regB,7))+256)%256
 #b ccrC:=(~BIT(((regA*256)+regB),15)&BIT(@1,15))|(BIT(@1,15)&BIT((((regA*256)+regB)+@1+65536)%65536,15))|(BIT((((regA*256)+regB)+@1+65536)%65536,15)&~BIT(((regA*256)+regB),15))
 #b ccrN:=BIT((((regA*256)+regB)+@1+65536)%65536,15)
 #b ccrZ:=(((@1+(regA*256)+regB)%65536)=0)
@@ -734,7 +734,7 @@ NO_BRANCH
 [4,4]
 <
 regB:=(regB+(-@1%256)+256)%256
-regA:=(regA-@1/256+(~BIT(regB,7)&BIT(-@1%256,7))|(BIT(-@1%256,7)&BIT((regB-@1%256+256)%256,7))|(BIT((regB-@1%256+256)%256,7)&~BIT(regB,7))+256)%256
+regA:=(regA-and(@1,65280)/256+(~BIT(regB,7)&BIT(-@1%256,7))|(BIT(-@1%256,7)&BIT((regB-@1%256+256)%256,7))|(BIT((regB-@1%256+256)%256,7)&~BIT(regB,7))+256)%256
 #b ccrC:=(~BIT(((regA*256)+regB),15)&BIT(-@1,15))|(BIT(-@1,15)&BIT((((regA*256)+regB)-@1+65536)%65536,15))|(BIT((((regA*256)+regB)-@1+65536)%65536,15)&~BIT(((regA*256)+regB),15))
 #b ccrN:=BIT((((regA*256)+regB)-@1+65536)%65536,15)
 #b ccrZ:=(((-@1+(regA*256)+regB)%65536)=0)
@@ -1387,7 +1387,7 @@ NO_BRANCH
 [3,3]
 <
 regX:=regA*256+regB
-regA:=regX/256
+regA:=and(regX,65280)/256
 regB:=regX%256
 >
 
@@ -1401,7 +1401,7 @@ NO_BRANCH
 [4,4]
 <
 regY:=regA*256+regB
-regA:=regY/256
+regA:=and(regY,65280)/256
 regB:=regY%256
 >
 
@@ -1574,7 +1574,8 @@ regSP:=(regSP+65535)%65536
 <
 #b MEM_WRITE:=true
 MEM_ADDR:=regSP
-MEM_DATA:=regX/256
+MEM_DATA:=AND(regX,65280)/256
+//MEM_DATA:=regX/256
 regSP:=(regSP+65535)%65536
 >
 
