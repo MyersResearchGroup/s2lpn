@@ -1431,6 +1431,7 @@ BRANCH
 BSR
 @1
 #b @1_1
+#i regSP
 NO_BRANCH
 @next
 {}
@@ -1542,6 +1543,7 @@ NO_BRANCH
 
 RTS
 @1 
+#i regSP
 #b @1_1
 BRANCH
 @1_top
