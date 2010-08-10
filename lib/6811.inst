@@ -888,6 +888,7 @@ regA:=((regA+@1+ccrC+256)%256)
 CLRA
 
 #i regA
+#b ccrC ccrN ccrV ccrZ
 NO_BRANCH
 @next
 {}
@@ -904,6 +905,7 @@ regA:=0
 CLRB
 
 #i regB
+#b ccrC ccrN ccrV ccrZ
 NO_BRANCH
 @next
 {}
