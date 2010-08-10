@@ -231,6 +231,23 @@ regA:=(@1%256)
 #b ccrV:=FALSE
 >
 
+//extended Zhen
+LDAA
+@1+1
+@1 BOUND 0 255
+#b ccrN ccrV ccrZ
+#i regA @1_p_1 
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+regA:=(@1_p_1%256)
+#b ccrN:=BIT(@1_p_1,7)
+#b ccrZ:=((@1_p_1%256)=0)
+#b ccrV:=FALSE
+>
+
 //extended
 LDAB
 @1
@@ -453,6 +470,23 @@ NO_BRANCH
 [4,4]
 <
 @1:=regA
+#b ccrN:=BIT(regA,7)
+#b ccrZ:=(regA=0)
+#b ccrV:=FALSE
+>
+
+//extended Zhen
+STAA
+@1+1
+@1 BOUND 0 255
+#b ccrN ccrV ccrZ 
+#i regA @1_p_1
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+@1_p_1:=regA
 #b ccrN:=BIT(regA,7)
 #b ccrZ:=(regA=0)
 #b ccrV:=FALSE
@@ -968,6 +1002,23 @@ NO_BRANCH
 #b ccrV:=(BIT(regA,7)&~BIT(@1,7)&~BIT((regA-@1+256)%256,7))|(~BIT(regA,7)&BIT(@1,7)&BIT((regA-@1+256)%256,7))
 >
 
+//extended Zhen
+CMPA
+@1+1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ
+#i regA @1_p_1
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+#b ccrC:=(~BIT(regA,7)&BIT(@1_p_1,7))|(BIT(@1_p_1,7)&BIT((regA-@1_p_1+256)%256,7))|(BIT((regA-@1_p_1+256)%256,7)&~BIT(regA,7))
+#b ccrN:=BIT((regA-@1_p_1+256)%256,7)
+#b ccrZ:=((regA-@1_p_1+256)%256=0)
+#b ccrV:=(BIT(regA,7)&~BIT(@1_p_1,7)&~BIT((regA-@1_p_1+256)%256,7))|(~BIT(regA,7)&BIT(@1_p_1,7)&BIT((regA-@1_p_1+256)%256,7))
+>
+
 //immediate
 CMPB
 #@1
@@ -1185,6 +1236,24 @@ regA:=(regA-@1+256)%256
 #b ccrV:=(BIT(regA,7)&~BIT(@1,7)&~BIT((regA-@1+256)%256,7))|(~BIT(regA,7)&BIT(@1,7)&BIT((regA-@1+256)%256,7))
 >
 
+//extended Zhen
+SUBA
+@1+1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ
+#i regA @1+1
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+regA:=(regA-@1_p_1+256)%256
+#b ccrC:=(~BIT(regA,7)&BIT(@1_p_1,7))|(BIT(@1_p_1,7)&BIT((regA-@1_p_1+256)%256,7))|(BIT((regA-@1_p_1+256)%256,7)&~BIT(regA,7))
+#b ccrN:=BIT((regA-@1_p_1+256)%256,7)
+#b ccrZ:=((regA-@1_p_1+256)%256=0)
+#b ccrV:=(BIT(regA,7)&~BIT(@1_p_1,7)&~BIT((regA-@1_p_1+256)%256,7))|(~BIT(regA,7)&BIT(@1_p_1,7)&BIT((regA-@1_p_1+256)%256,7))
+>
+
 //immediate
 SUBB
 #@1
@@ -1221,6 +1290,24 @@ regB:=(regB-@1+256)%256
 #b ccrV:=(BIT(regB,7)&~BIT(@1,7)&~BIT((regB-@1+256)%256,7))|(~BIT(regB,7)&BIT(@1,7)&BIT((regB-@1+256)%256,7))
 >
 
+//extended Zhen
+SUBB
+@1+1
+@1 BOUND -128 255
+#b ccrC ccrN ccrV ccrZ
+#i regB @1_p_1
+NO_BRANCH
+@next
+{}
+[4,4]
+<
+regB:=(regB-@1_p_1+256)%256
+#b ccrC:=(~BIT(regB,7)&BIT(@1_p_1,7))|(BIT(@1_p_1,7)&BIT((regB-@1_p_1+256)%256,7))|(BIT((regB-@1_p_1+256)%256,7)&~BIT(regB,7))
+#b ccrN:=BIT((regB-@1_p_1+256)%256,7)
+#b ccrZ:=((regB-@1_p_1+256)%256=0)
+#b ccrV:=(BIT(regB,7)&~BIT(@1_p_1,7)&~BIT((regB-@1_p_1+256)%256,7))|(~BIT(regB,7)&BIT(@1_p_1,7)&BIT((regB-@1_p_1+256)%256,7))
+>
+
 //extended
 SUBD
 @1
@@ -1240,7 +1327,69 @@ regA:=(regA-@1-((~BIT(regB,7)&BIT(@1_p_1,7))|(BIT(@1_p_1,7)&BIT((regB-@1_p_1+256
 #b ccrV:=(BIT((regA*256)+regB,7)&~BIT((@1*256)+@1_p_1,7)&~BIT(((regA*256)+regB-((@1*256)+@1_p_1)+256)%256,7))|(~BIT((regA*256)+regB,7)&BIT((@1*256)+@1_p_1,7)&BIT(((regA*256)+regB-((@1*256)+@1_p_1)+256)%256,7))
 >
 
+// inherent Zhen
+INCA 
 
+#b ccrN ccrV ccrZ
+#i regA
+NO_BRANCH
+@next
+{}
+[2,2]
+<
+regA:= (regA+1)%256
+#b ccrN:= BIT((regA+1)%256,7)
+#b ccrV:= ~BIT(regA,7)&BIT(regA,6)&BIT(regA,5)&BIT(regA,4)&BIT(regA,3)&BIT(regA,2)&BIT(regA,1)
+#b ccrZ:= ~BIT((regA+1)%256,7)&~BIT((regA+1)%256,6)&~BIT((regA+1)%256,5)&~BIT((regA+1)%256,4)&~BIT((regA+1)%256,3)&~BIT((regA+1)%256,2)&~BIT((regA+1)%256,1)&~BIT((regA+1)%256,0)
+>
+
+// inherent Zhen
+INCB
+
+#b ccrN ccrV ccrZ
+#i regB
+NO_BRANCH
+@next
+{}
+[2,2]
+<
+regB:= (regB+1)%256
+#b ccrN:= BIT((regB+1)%256,7)
+#b ccrV:= ~BIT(regB,7)&BIT(regB,6)&BIT(regB,5)&BIT(regB,4)&BIT(regB,3)&BIT(regB,2)&BIT(regB,1)
+#b ccrZ:= ~BIT((regB+1)%256,7)&~BIT((regB+1)%256,6)&~BIT((regB+1)%256,5)&~BIT((regB+1)%256,4)&~BIT((regB+1)%256,3)&~BIT((regB+1)%256,2)&~BIT((regB+1)%256,1)&~BIT((regB+1)%256,0)
+>
+
+// extended Zhen
+INC
+@1
+#b ccrN ccrV ccrZ
+#i @1
+NO_BRANCH
+@next
+{}
+[6,6]
+<
+@1:= (@1+1)%256
+#b ccrN:= BIT((@1+1)%256,7)
+#b ccrV:= ~BIT(@1,7)&BIT(@1,6)&BIT(@1,5)&BIT(@1,4)&BIT(@1,3)&BIT(@1,2)&BIT(@1,1)
+#b ccrZ:= ~BIT((@1+1)%256,7)&~BIT((@1+1)%256,6)&~BIT((@1+1)%256,5)&~BIT((@1+1)%256,4)&~BIT((@1+1)%256,3)&~BIT((@1+1)%256,2)&~BIT((@1+1)%256,1)&~BIT((@1+1)%256,0)
+>
+
+// extended Zhen
+INC
+@1+1
+#b ccrN ccrV ccrZ
+#i @1_p_1
+NO_BRANCH
+@next
+{}
+[6,6]
+<
+@1_p_1:= (@1_p_1+1)%256
+#b ccrN:= BIT((@1_p_1+1)%256,7)
+#b ccrV:= ~BIT(@1_p_1,7)&BIT(@1_p_1,6)&BIT(@1_p_1,5)&BIT(@1_p_1,4)&BIT(@1_p_1,3)&BIT(@1_p_1,2)&BIT(@1_p_1,1)
+#b ccrZ:= ~BIT((@1_p_1+1)%256,7)&~BIT((@1_p_1+1)%256,6)&~BIT((@1_p_1+1)%256,5)&~BIT((@1_p_1+1)%256,4)&~BIT((@1_p_1+1)%256,3)&~BIT((@1_p_1+1)%256,2)&~BIT((@1_p_1+1)%256,1)&~BIT((@1_p_1+1)%256,0)
+>
 ////////////////////LOGICAL INSTRUCTIONS//////////////////////////
 
 //immediate
@@ -1658,4 +1807,5 @@ NO_BRANCH
 [0,0]
 <
 >
+
 
