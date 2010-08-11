@@ -1588,7 +1588,7 @@ BSR
 NO_BRANCH
 @next
 {}
-[3,3]
+[6,6]
 <
 regSP:=(regSP+65534)%65536
 #b @1_1:=TRUE
@@ -1610,7 +1610,7 @@ BRANCH
 NO_BRANCH
 @next
 {((ccrN&ccrV)|(~ccrN&~ccrV))}
-[1,1]
+[3,3]
 <
 >
 
@@ -1626,7 +1626,7 @@ BRANCH
 NO_BRANCH
 @next
 {(~ccrC)}
-[1,1]
+[3,3]
 <
 >
 
@@ -1642,7 +1642,7 @@ BRANCH
 NO_BRANCH
 @next
 {(~ccrC&~ccrZ)}
-[1,1]
+[3,3]
 <
 >
 
@@ -1658,7 +1658,7 @@ BRANCH
 NO_BRANCH
 @next
 {ccrN}
-[1,1]
+[3,3]
 <
 >
 
@@ -1674,7 +1674,7 @@ BRANCH
 NO_BRANCH
 @next
 {~ccrZ}
-[1,1]
+[3,3]
 <
 >
 
@@ -1690,7 +1690,7 @@ BRANCH
 NO_BRANCH
 @next
 {ccrZ}
-[1,1]
+[3,3]
 <
 >
 
@@ -1701,10 +1701,42 @@ RTS
 BRANCH
 @1_top
 {}
-[1,1]
+[5,5]
 <
 regSP:=regSP+2
 #b @1_1:=FALSE
+>
+
+BHS  // Zhen
+@1
+#b ccrC
+BRANCH
+@1
+{~ccrC}
+[3,3]
+<
+>
+NO_BRANCH
+@next
+{ccrC}
+[3,3]
+<
+>
+
+BCC  // Same as BHS  Zhen
+@1
+#b ccrC
+BRANCH
+@1
+{~ccrC}
+[3,3]
+<
+>
+NO_BRANCH
+@next
+{ccrC}
+[3,3]
+<
 >
 
 ////////////////////STACK INSTRUCTIONS//////////////////////////
