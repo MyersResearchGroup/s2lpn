@@ -1321,7 +1321,7 @@ SUBD
 NO_BRANCH
 @next
 {}
-[4,4]
+[6,6]
 <
 regB:=(regB-@1_p_1+256)%256
 regA:=(regA-@1-((~BIT(regB,7)&BIT(@1_p_1,7))|(BIT(@1_p_1,7)&BIT((regB-@1_p_1+256)%256,7))|(BIT((regB-@1_p_1+256)%256,7)&~BIT(regB,7)))+256)%256
