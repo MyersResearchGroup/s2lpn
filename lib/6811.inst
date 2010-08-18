@@ -391,7 +391,7 @@ MEM_ADDR:=regX+@1
 {~MEM_READ}
 [0,0]
 <
-ldTMP:=MEM_DATA
+ld_TMP:=MEM_DATA
 >
 {}
 [1,1]
