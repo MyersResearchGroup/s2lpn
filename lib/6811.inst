@@ -57,7 +57,7 @@ LDAB
 NO_BRANCH
 @next
 {}
-[1,1]
+[2,2]
 <
 regB:=(@1%256)
 #b ccrN:=BIT(@1,7)
@@ -74,7 +74,7 @@ LDAB
 NO_BRANCH
 @next
 {}
-[1,1]
+[2,2]
 <
 regB:=(-@1%256)
 #b ccrN:=BIT(-@1,7)
