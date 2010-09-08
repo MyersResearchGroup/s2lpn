@@ -1141,13 +1141,13 @@ NO_BRANCH
 //inherent
 DES
 
-#i regS
+#i regSP
 NO_BRANCH
 @next
 {}
 [3,3]
 <
-regS:=(regS+65535)%65536
+regSP:=(regSP+65535)%65536
 >
 
 //inherent
@@ -1180,7 +1180,7 @@ regY:=(regY+65535)%65536
 
 
 // inherent Zhen
-INCA 
+INCA
 
 #b ccrN ccrV ccrZ
 #i regA
@@ -1246,13 +1246,13 @@ NO_BRANCH
 //inherent
 INS
 
-#i regS
+#i regSP
 NO_BRANCH
 @next
 {}
 [3,3]
 <
-regS:=(regS+1)%65536
+regSP:=(regSP+1)%65536
 >
 
 //inherent
@@ -1682,18 +1682,24 @@ BRANCH
 >
 
 BSR
-@1
+@1 @2
 #b @1_1
-#i regSP
+#i regSP @1_call
 NO_BRANCH
 @next
 {}
+place @1
 [6,6]
 <
 regSP:=(regSP+65534)%65536
-#b @1_1:=TRUE
+@1_call:=@2
 >
-{~@1_1}
+{false}
+[0,0]
+place @1_rts
+<
+>
+{@1_call=@2}
 [0,0]
 <
 >
@@ -1801,6 +1807,7 @@ RTS
 BRANCH
 @1_top
 {}
+place @1_rts
 [5,5]
 <
 regSP:=regSP+2
@@ -2010,3 +2017,11 @@ NO_BRANCH
 >
 
 
+NOP
+
+NO_BRANCH
+@next
+{}
+[2,2]
+<
+>
