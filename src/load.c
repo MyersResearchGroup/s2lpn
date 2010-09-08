@@ -153,7 +153,21 @@ int next_element(string in_string, int *pos, int *count,
   for (*count = 0;*count < term;(*count)++){
      // found a comment:  ends line
     if (in_string.at((*pos)+(*count)) == ';'){
-      return 0;
+      if (in_string.at((*pos)+(*count)+1) != '@')
+	return 0;
+      else{
+	cout << "pos = "<<(*pos)<<"count ="<<(*count)<< "term = "<<term<<endl;
+	(*pos)+=2;
+	while ((in_string.at(*pos) == ' ') || (in_string.at(*pos) == '\t')){
+	  //cout << "whitespace...\n";
+	  (*pos)++;
+	  if (*pos >= length)
+	    return 0;
+	}
+	term = length - *pos;
+	*count = 0;
+ 	cout << "pos = "<<(*pos)<<"count ="<<(*count)<< "term = "<<term<<endl;
+     }
     }
     for (int i = 0; i< nlimits; i++){
       if (in_string.at((*pos)+(*count)) == delimiters.at(i)){
@@ -492,13 +506,18 @@ void transition::merge(transition *mergee){
 
 void transition::replace(str_pr *arg){
   label = findNreplace(arg->left,label,arg->right);
+  place = findNreplace(arg->left,place,arg->right);
+  priority = findNreplace(arg->left,priority,arg->right);
   enabling = findNreplace(arg->left,enabling,arg->right);
   if ((enabling == "TRUE")||(enabling =="true"))
     enabling = "";
-  if (lower == arg->left)
-    lower = arg->right;
-  if (upper == arg->left)
-    upper = arg->right;
+  //must change to do search and replace
+  lower = findNreplace(arg->left,lower,arg->right);
+  upper = findNreplace(arg->left,upper,arg->right);
+//   if (lower == arg->left)
+//     lower = arg->right;
+//   if (upper == arg->left)
+//     upper = arg->right;
   assigns->replace(arg);
   bool_assigns->replace(arg);
   rate_assigns->replace(arg);
@@ -512,11 +531,16 @@ transition::transition(string expr, string low, string up){
   assigns = new str_list;
   bool_assigns = new str_list;
   rate_assigns = new str_list;
+  label = "";
+  place = "";
+  priority = "";
 }
 
 transition::transition(transition *old_trans){
   next = NULL;
   label = old_trans->label;
+  place = old_trans->place;
+  priority = old_trans->priority;
   enabling = old_trans->enabling;
   lower = old_trans->lower;
   upper = old_trans->upper;
@@ -524,12 +548,29 @@ transition::transition(transition *old_trans){
   bool_assigns = new str_list(old_trans->bool_assigns);
   rate_assigns = new str_list(old_trans->rate_assigns);
 }
+
 void transition::predicate(string pred){
   if (enabling == "")
     enabling = pred;
   else {
     enabling = pred + "&(" + enabling + ")";
   }
+}
+
+void transition::prioritize(string exp){
+  priority=exp;
+}
+
+void transition::add_label(string str){
+  label=str;
+}
+void transition::add_place(string str){
+  place=str;
+}
+
+void transition::delay(string l_b, string u_b){
+  lower=l_b;
+  upper=u_b;
 }
 
 transition::~transition(){
@@ -541,7 +582,14 @@ transition::~transition(){
 
 void transition::print(){
   cout << "{" << enabling << "}" << endl;
-  cout << '[' << lower << ',' << upper << "]\n";
+  if (upper != "")
+    cout << '[' << lower << ',' << upper << "]\n";
+  else 
+    cout << lower << endl;
+  if (priority != "")
+    cout << "priority "<< priority << endl;
+  if (label != "")
+    cout << "label "<< label << endl;
   cout << "<\n";
   //chain through assignments
   cout << "assignments" << endl;
@@ -782,8 +830,8 @@ void instruction::predicate(string pred){
 }
 
 int instruction::merge(string test){
-//   cout << "current instruction:\n";
-//   this->print();
+  //cout << "current instruction:\n";
+  //this->print();
   if ((next ==NULL) || (next->first->head->enabling != test)){
     return 0;
   }
@@ -1161,8 +1209,10 @@ instruction *language::find_inst(string command, string args){
 	//get next argument pair
 	res1 = next_element(args,&pos1_1,&pos1_2,delimiters,nlimits);
 	str_1 = args.substr(pos1_1,pos1_2);
+	
 	res2 = next_element(temp->pattern,&pos2_1,&pos2_2,delimiters,nlimits);
 	str_2 = temp->pattern.substr(pos2_1,pos2_2);
+	cout << "str_1 = "<< str_1 << " str_2 = "<< str_2 << endl;
 	pos1_1 += pos1_2;
 	pos2_1 += pos2_2;
 	//reached end of both of the strings?
@@ -1207,7 +1257,7 @@ instruction *language::find_inst(string command, string args){
 
 language *load_language(string fname){
   language *in_language = new language();
-  string mnemonic, pattern,temp,t1,t2,t3;
+  string mnemonic, pattern,temp,t1,t2,t3,priority,place;
   instruction *inst;
   leg *curr_leg;
   transition *curr_trans;
@@ -1284,24 +1334,48 @@ language *load_language(string fname){
 	lower = temp.find("{");
 	upper = temp.find("}");
 	t1 = temp.substr(lower+1,upper-lower-1);
-	// parse timing bounds
-	instfile >> temp;
-	lower = temp.find("[");
-	upper = temp.find(",");
-	t2 = temp.substr(lower+1,upper-lower-1);
-	lower = upper;
-	upper = temp.find("]");
-	t3 = temp.substr(lower+1,upper-lower-1);
+	// insert default 
+	t2 = "0";
+	t3 = "INF";
 	//build new transition
 	curr_trans = new transition(t1,t2,t3);
 	curr_leg->insert(curr_trans);
-	//flush eol;
-	getline(instfile, temp);
-	//start assignment reading
+	//add new elements here
 	temp = cpp_pop_line(&instfile);
-	// assignment list should start with "<" line
-	if (temp != "<")
-	  cout <<"parse error:"<<temp<<"\n";
+	while (temp != "<") {
+	  //cout << "temp = " << temp<<endl;
+	  if ((temp.length()>0) && (temp.at(0) == '[')){
+	    // parse timing bounds
+	    lower = temp.find("[");
+	    upper = temp.find(",");
+	    t2 = temp.substr(lower+1,upper-lower-1);
+	    lower = upper;
+	    upper = temp.find("]");
+	    t3 = temp.substr(lower+1,upper-lower-1);
+	    curr_trans->delay(t2,t3);
+	  }
+	  else if (getword(temp) == "priority"){
+	    priority = getword(stripword(temp));
+	    cout << "adding priority " << priority <<endl;
+	    curr_trans->prioritize(priority);
+	  }
+	  else if (getword(temp) == "place"){
+	    place = getword(stripword(temp));
+	    cout << "adding place label  " << place <<endl;
+	    curr_trans->add_place(place);
+	  } 
+	  else {
+	    t2 = getword(temp);
+	    t3 = "";
+	    curr_trans->delay(t2,t3);
+	  }
+	  temp = cpp_pop_line(&instfile);
+	}
+	//start assignment reading
+	// 	temp = cpp_pop_line(&instfile);
+	// 	// assignment list should start with "<" line
+	// 	if (temp != "<")
+	// 	  cout <<"parse error:"<<temp<<"\n";
 	temp = cpp_pop_line(&instfile);
 	// assignment list should end with ">" line
 	while (temp != ">"){
@@ -1671,7 +1745,10 @@ void lhpn::update(language *prog){
       curr_label = curr_inst_label;
       sprintf(t_num,"%d",tr_num++);
       trans_label = t + t_num;
-      if (curr_trans->next){
+      if (curr_trans->place != ""){
+	next_label = curr_trans->place;
+      }
+      else if (curr_trans->next){
 	sprintf(p_num,"%d",pl_num++);
 	next_label = p + p_num;
       }
@@ -1694,7 +1771,10 @@ void lhpn::update(language *prog){
 	  curr_label = next_label;
 	  sprintf(t_num,"%d",tr_num++);
 	  trans_label = t + t_num;
-	  if (curr_trans->next){
+	  if (curr_trans->place != ""){
+	    next_label = curr_trans->place;
+	  }
+	  else if (curr_trans->next){
 	    sprintf(p_num,"%d",pl_num++);
 	    next_label = p + p_num;
 	  }

@@ -6,7 +6,7 @@
 #include <fstream>
 using namespace std;
 
-//random striung manipulation fxns
+//random string manipulation fxns
 // strips assembly style comments (;) and returns the first non-comment line
 string ass_pop_line(fstream *in_file);
 // strips c++ style comments (//) and returns the first non-comment line
@@ -86,12 +86,16 @@ class pr_list{
 //class for transitions within an instruction
 class transition{
  public:
-  // assembly label
+  // transition label
   string label;
+  // next place label
+  string place;
   //enabling condition
   string enabling;
   //timing bounds
   string lower, upper;
+  //priority expression
+  string priority;
   //assignment linked list 
   str_list *assigns;
   //boolean assignment linked list 
@@ -111,6 +115,10 @@ class transition{
   transition(transition *old_trans);
   void print();
   void predicate(string pred);
+  void prioritize(string exp);
+  void add_label(string str);
+  void add_place(string str);
+  void delay(string l_b,string u_b);
   ~transition();
 };
 

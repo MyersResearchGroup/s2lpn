@@ -24,6 +24,11 @@ void process_line(string line, language *in_language, fstream* progfile,
     found++;
     //cout << "marking next instruction.\n";
   }
+  if (word2 == "unmark"){
+    *mark = 0;
+    found++;
+    //cout << "unmarking next instruction.\n";
+  }
   if (word2 == "fail_set"){
     *fail_trans = 1;
     found++;
