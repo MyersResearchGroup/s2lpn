@@ -5,6 +5,8 @@ const int INFIN = 2147483647;
 
 int lhpn::inst_num = 0, lhpn::pl_num = 0, lhpn::tr_num = 0;
 
+int library::unique = 0;
+
 string ass_pop_line(fstream *in_file){
   //cout << "ass_pop_line\n";
   string temp;
@@ -156,7 +158,7 @@ int next_element(string in_string, int *pos, int *count,
       if (in_string.at((*pos)+(*count)+1) != '@')
 	return 0;
       else{
-	cout << "pos = "<<(*pos)<<"count ="<<(*count)<< "term = "<<term<<endl;
+	// cout << "pos = "<<(*pos)<<"count ="<<(*count)<< "term = "<<term<<endl;
 	(*pos)+=2;
 	while ((in_string.at(*pos) == ' ') || (in_string.at(*pos) == '\t')){
 	  //cout << "whitespace...\n";
@@ -166,7 +168,7 @@ int next_element(string in_string, int *pos, int *count,
 	}
 	term = length - *pos;
 	*count = 0;
- 	cout << "pos = "<<(*pos)<<"count ="<<(*count)<< "term = "<<term<<endl;
+ 	// cout << "pos = "<<(*pos)<<"count ="<<(*count)<< "term = "<<term<<endl;
      }
     }
     for (int i = 0; i< nlimits; i++){
@@ -331,6 +333,12 @@ str_list::str_list(str_list *old_set){
     insert(temp->curr);
     temp = temp->next;
   }
+}
+
+bool pr_list::empty(){
+  if ((head==tail) && (head==NULL))
+    return true;
+  return false;
 }
 
 void pr_list::insert(string term1,string term2){
@@ -949,6 +957,16 @@ void instruction::add_vars(string var_list){
       var_list = stripword(var_list);
     }
   }
+  if (word == "#u"){
+    // cout << "unique line\n";
+    word = getword(var_list);
+    var_list = stripword(var_list);
+    while (word != ""){
+      uniques->insert(word,"undef");
+      word = getword(var_list);
+      var_list = stripword(var_list);
+    }
+  }
 }
 
 void instruction::add_constraint(string new_constraint){
@@ -1005,6 +1023,7 @@ instruction::instruction(string instr, string args){
   sigs = new pr_list;
   vars = new pr_list;
   conts = new pr_list;
+  uniques = new pr_list;
 }
 
 //copy constructor
@@ -1032,6 +1051,7 @@ instruction::instruction(instruction *old_inst){
   sigs = new pr_list(old_inst->sigs);
   vars = new pr_list(old_inst->vars);
   conts = new pr_list(old_inst->conts);
+  uniques = new pr_list(old_inst->uniques);
 }
 
 void language::insert(instruction *new_inst){
@@ -1174,6 +1194,8 @@ language::language(){
 }
   
 instruction *language::find_inst(string command, string args){
+  // unique identifier
+  char unid[32]; 
   // iterator
   instruction *temp = head;
   // return value
@@ -1212,7 +1234,7 @@ instruction *language::find_inst(string command, string args){
 	
 	res2 = next_element(temp->pattern,&pos2_1,&pos2_2,delimiters,nlimits);
 	str_2 = temp->pattern.substr(pos2_1,pos2_2);
-	cout << "str_1 = "<< str_1 << " str_2 = "<< str_2 << endl;
+	//cout << "str_1 = "<< str_1 << " str_2 = "<< str_2 << endl;
 	pos1_1 += pos1_2;
 	pos2_1 += pos2_2;
 	//reached end of both of the strings?
@@ -1247,6 +1269,15 @@ instruction *language::find_inst(string command, string args){
   if (temp){
     //create copy
     r_val = new instruction(temp);
+    if (!r_val->uniques->empty()){ 
+      str_pr *tmp = r_val->uniques->head;
+      while (tmp){
+	//cout << "adding unique ID " << library::unique <<"\n";
+	sprintf(unid,"%d",(library::unique)++);
+	arg_list->insert(tmp->left,unid);
+	tmp=tmp->next;
+      }
+    }
     // substitute string pairs
     r_val->replace(arg_list);
     delete arg_list;
@@ -1317,7 +1348,6 @@ language *load_language(string fname){
       temp = cpp_pop_line(&instfile);
       //cout << "adding vars: " << temp << "\n";
       inst->add_vars(temp);
-      
     }
     //loop reading each leg
     inst_done = 0;
@@ -1356,12 +1386,12 @@ language *load_language(string fname){
 	  }
 	  else if (getword(temp) == "priority"){
 	    priority = getword(stripword(temp));
-	    cout << "adding priority " << priority <<endl;
+	    // cout << "adding priority " << priority <<endl;
 	    curr_trans->prioritize(priority);
 	  }
 	  else if (getword(temp) == "place"){
 	    place = getword(stripword(temp));
-	    cout << "adding place label  " << place <<endl;
+	    // cout << "adding place label  " << place <<endl;
 	    curr_trans->add_place(place);
 	  } 
 	  else {

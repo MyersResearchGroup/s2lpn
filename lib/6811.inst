@@ -334,17 +334,25 @@ regY:=(@1%256)*256+(@1_p_1%256)
 //register X indirect
 LDAA
 @1,x
+#u @uniq1
 #b ccrN ccrV ccrZ MEM_READ 
-#i regA regX MEM_ADDR MEM_DATA
+#i regA regX MEM_ADDR MEM_DATA mem_access
 NO_BRANCH
 @next
 {}
+place mem_read
 [4,4]
 <
+mem_access:=@uniq1
 #b MEM_READ:=true
 MEM_ADDR:=regX+@1
 >
-{~MEM_READ}
+{false}
+place mem_read_done
+[0,0]
+<
+>
+{mem_access=@uniq1}
 [0,0]
 <
 regA:=(MEM_DATA%256)
@@ -356,17 +364,25 @@ regA:=(MEM_DATA%256)
 //register X indirect
 LDAB
 @1,x
+#u @uniq1
 #b ccrN ccrV ccrZ MEM_READ 
-#i regB regX MEM_ADDR MEM_DATA
+#i regB regX MEM_ADDR MEM_DATA mem_access
 NO_BRANCH
 @next
 {}
+place mem_read
 [4,4]
 <
+mem_access:=@uniq1
 #b MEM_READ:=true
 MEM_ADDR:=regX+@1
 >
-{~MEM_READ}
+{false}
+place mem_read_done
+[0,0]
+<
+>
+{mem_access=@uniq1}
 [0,0]
 <
 regB:=(MEM_DATA%256)
@@ -378,28 +394,43 @@ regB:=(MEM_DATA%256)
 //register X indirect
 LDX
 @1,x
+#u @uniq1 @uniq2
 #b ccrN ccrV ccrZ MEM_READ
-#i regX ld_TMP MEM_ADDR MEM_DATA
+#i regX ld_TMP MEM_ADDR MEM_DATA mem_access
 NO_BRANCH
 @next
 {}
+place mem_read
 [4,4]
 <
+mem_access:=@uniq1
 #b MEM_READ:=true
 MEM_ADDR:=regX+@1
 >
-{~MEM_READ}
+{false}
+place mem_read_done
+[0,0]
+<
+>
+{mem_access=@uniq1}
 [0,0]
 <
 ld_TMP:=MEM_DATA
 >
 {}
+place mem_read
 [1,1]
 <
+mem_access:=@uniq2
 #b MEM_READ:=true
 MEM_ADDR:=regX+@1+1
 >
-{~MEM_READ}
+{false}
+place mem_read_done
+[0,0]
+<
+>
+{mem_access=@uniq2}
 [0,0]
 <
 regX:=(MEM_DATA)*256+ld_TMP
@@ -581,13 +612,16 @@ NO_BRANCH
 STAA
 @1,x
 @1 BOUND 0 255
+#u @uniq1
 #b ccrN ccrV ccrZ MEM_WRITE
 #i regA regX @1 MEM_ADDR MEM_DATA
 NO_BRANCH
 @next
 {}
+place mem_write
 [4,4]
 <
+mem_access:=@uniq1
 #b MEM_WRITE:=true
 MEM_ADDR:=regX+@1
 MEM_DATA:=regA
@@ -595,18 +629,30 @@ MEM_DATA:=regA
 #b ccrZ:=(regA=0)
 #b ccrV:=FALSE
 >
+{false}
+place mem_write_done
+[0,0]
+<
+>
+{mem_access=@uniq1}
+[0,0]
+<
+>
 
 //register X indirect
 STAB
 @1,x
 @1 BOUND 0 255
+#u @uniq1
 #b ccrN ccrV ccrZ MEM_WRITE
 #i regB regX @1 MEM_ADDR MEM_DATA
 NO_BRANCH
 @next
 {}
+place mem_write
 [4,4]
 <
+mem_access:=@uniq1
 #b MEM_WRITE:=true
 MEM_ADDR:=regX+@1
 MEM_DATA:=regB
@@ -614,31 +660,60 @@ MEM_DATA:=regB
 #b ccrZ:=(regB=0)
 #b ccrV:=FALSE
 >
+{false}
+place mem_write_done
+[0,0]
+<
+>
+{mem_access=@uniq1}
+[0,0]
+<
+>
+
 
 //register X indirect
 STD
 @1,x
 @1 BOUND 0 255
+#u @uniq1 @uniq2
 #b ccrN ccrV ccrZ MEM_WRITE
 #i regA regB regX @1 MEM_ADDR MEM_DATA
 NO_BRANCH
 @next
 {}
+place mem_write
 [4,4]
 <
+mem_access:=@uniq1
 #b MEM_WRITE:=true
 MEM_ADDR:=regX+@1
 MEM_DATA:=regA
 >
-{}
+{false}
+place mem_write_done
+[0,0]
+<
+>
+{mem_access=@uniq1}
+place mem_write
 [1,1]
 <
+mem_access:=@uniq2
 #b MEM_WRITE:=true
 MEM_ADDR:=regX+@1+1
 MEM_DATA:=regB
 #b ccrN:=BIT(regA,7)
 #b ccrZ:=(regA=0)&(regB=0)
 #b ccrV:=FALSE
+>
+{false}
+place mem_write_done
+[0,0]
+<
+>
+{mem_access=@uniq2}
+[0,0]
+<
 >
 
 ////////////////////ARITHMETIC INSTRUCTIONS//////////////////////////
@@ -956,13 +1031,16 @@ NO_BRANCH
 CLR
 @1,x
 @1 BOUND 0 255
+#u @uniq1
 #b ccrC ccrN ccrV ccrZ MEM_WRITE
-#i regX @1 MEM_ADDR MEM_DATA
+#i regX @1 MEM_ADDR MEM_DATA mem_access
 NO_BRANCH
 @next
 {}
+place mem_write
 [4,4]
 <
+mem_access:=@uniq1
 #b MEM_WRITE:=true
 MEM_ADDR:=regX+@1
 MEM_DATA:=0
@@ -970,6 +1048,15 @@ MEM_DATA:=0
 #b ccrZ:=TRUE
 #b ccrV:=FALSE
 #b ccrC:=FALSE
+>
+{false}
+place mem_write_done
+[0,0]
+<
+>
+{mem_access=@uniq1}
+[0,0]
+<
 >
 
 //immediate
@@ -1682,8 +1769,8 @@ BRANCH
 >
 
 BSR
-@1 @2
-#b @1_1
+@1
+#u
 #i regSP @1_call
 NO_BRANCH
 @next
@@ -1692,14 +1779,14 @@ place @1
 [6,6]
 <
 regSP:=(regSP+65534)%65536
-@1_call:=@2
+@1_call:=@unique
 >
 {false}
 [0,0]
 place @1_rts
 <
 >
-{@1_call=@2}
+{@1_call=@unique}
 [0,0]
 <
 >
@@ -1811,7 +1898,6 @@ place @1_rts
 [5,5]
 <
 regSP:=regSP+2
-#b @1_1:=FALSE
 >
 
 ////////////////////CONTROL INSTRUCTIONS//////////////////////////
@@ -1884,87 +1970,178 @@ NO_BRANCH
 //Stack Pointer Indexed
 pshx
 
+#u @uniq1 @uniq2
 #b MEM_WRITE
 #i regSP regX MEM_ADDR MEM_DATA
 NO_BRANCH
 @next
 {}
+place mem_write
 [3,3]
 <
+mem_access:=@uniq1
 #b MEM_WRITE:=true
 MEM_ADDR:=regSP
 MEM_DATA:=regX%256
 regSP:=(regSP+65535)%65536
 >
-{}
+{false}
+place mem_write_done
+[0,0]
+<
+>
+{mem_access=@uniq1}
+place mem_write
 [1,1]
 <
+mem_access:=@uniq2
 #b MEM_WRITE:=true
 MEM_ADDR:=regSP
 MEM_DATA:=AND(regX,65280)/256
-//MEM_DATA:=regX/256
 regSP:=(regSP+65535)%65536
+>
+{false}
+place mem_write_done
+[0,0]
+<
+>
+{mem_access=@uniq2}
+[0,0]
+<
+>
+
+//Stack Pointer Indexed
+pshy
+
+#u @uniq1 @uniq2
+#b MEM_WRITE
+#i regSP regY MEM_ADDR MEM_DATA
+NO_BRANCH
+@next
+{}
+place mem_write
+[4,4]
+<
+mem_access:=@uniq1
+#b MEM_WRITE:=true
+MEM_ADDR:=regSP
+MEM_DATA:=regY%256
+regSP:=(regSP+65535)%65536
+>
+{false}
+place mem_write_done
+[0,0]
+<
+>
+{mem_access=@uniq1}
+place mem_write
+[1,1]
+<
+mem_access:=@uniq2
+#b MEM_WRITE:=true
+MEM_ADDR:=regSP
+MEM_DATA:=AND(regY,65280)/256
+regSP:=(regSP+65535)%65536
+>
+{false}
+place mem_write_done
+[0,0]
+<
+>
+{mem_access=@uniq2}
+[0,0]
+<
 >
 
 //Stack Pointer Indexed
 pulx
 
+#u @uniq1 @uniq2
 #b MEM_READ
-#i regSP regX MEM_ADDR MEM_DATA
+#i regSP regX MEM_ADDR MEM_DATA mem_access
 NO_BRANCH
 @next
 {}
+place mem_read
 [4,4]
 <
+mem_access:=@uniq1
 #b MEM_READ:=true
 MEM_ADDR:=(regSP+1)%65536
 regSP:=(regSP+1)%65536
 >
-{~MEM_READ}
+{false}
+place mem_read_done
+[0,0]
+<
+>
+{mem_access=@uniq1}
 [0,0]
 <
 regX:=MEM_DATA*256
 >
 {}
+place mem_read
 [1,1]
 <
+mem_access:=@uniq2
 #b MEM_READ:=true
 MEM_ADDR:=(regSP+1)%65536
 regSP:=(regSP+1)%65536
 >
-{~MEM_READ}
+{false}
+place mem_read_done
+[0,0]
+<
+>
+{mem_access=@uniq2}
 [0,0]
 <
 regX:=regX+MEM_DATA
 >
 
-//Stack Pointer Indexed  Zhen
+//Stack Pointer Indexed
 puly
 
+#u @uniq1 @uniq2
 #b MEM_READ
-#i regSP regY MEM_ADDR MEM_DATA
+#i regSP regY MEM_ADDR MEM_DATA mem_access
 NO_BRANCH
 @next
 {}
-[5,5]
+place mem_read
+[4,4]
 <
+mem_access:=@uniq1
 #b MEM_READ:=true
 MEM_ADDR:=(regSP+1)%65536
 regSP:=(regSP+1)%65536
 >
-{~MEM_READ}
+{false}
+place mem_read_done
+[0,0]
+<
+>
+{mem_access=@uniq1}
 [0,0]
 <
 regY:=MEM_DATA*256
 >
 {}
+place mem_read
 [1,1]
 <
+mem_access:=@uniq2
 #b MEM_READ:=true
 MEM_ADDR:=(regSP+1)%65536
 regSP:=(regSP+1)%65536
 >
-{~MEM_READ}
+{false}
+place mem_read_done
+[0,0]
+<
+>
+{mem_access=@uniq2}
 [0,0]
 <
 regY:=regY+MEM_DATA

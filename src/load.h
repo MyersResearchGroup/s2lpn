@@ -78,6 +78,7 @@ class pr_list{
   void substitute(str_pr *arg);
   str_pr *lookup(string word);
   void print();
+  bool empty();
   pr_list();
   pr_list(pr_list *old_list);
   ~pr_list();
@@ -164,7 +165,7 @@ class constraint{
 class instruction{
  public:
   string label,mnemonic,pattern;
-  pr_list *sigs, *vars, *conts;
+  pr_list *sigs, *vars, *conts, *uniques;
   leg *first, *last;
   int marked;
   int failed;
@@ -206,6 +207,7 @@ class language{
 
 class library{
  public:
+  static int unique;
   language *head,*tail;
   language *lookup(string fname);
   void insert(language *new_lang);

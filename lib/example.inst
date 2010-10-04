@@ -39,12 +39,44 @@ NO_BRANCH
 #b @2:=@3
 >
 
+set_sig
+// enabling:variable:value:time bounds:target 
+@1 @2 @3 @4 @5 @6
+#b @2
+BRANCH
+@6
+{@1}
+[@4,@5]
+<
+#b @2:=@3
+>
+
 // zero time loop closure
 link
 @1
 BRANCH
 @1
 {NO_TRANS}
+[0,0]
+<
+>
+
+// zero time loop closure
+goto
+@1
+BRANCH
+@1
+{}
+[0,0]
+<
+>
+
+// zero time loop closure
+goto
+@1 @2
+BRANCH
+@2
+{@1}
 [0,0]
 <
 >
@@ -115,25 +147,4 @@ BRANCH
 {}
 [0,0]
 <
->
-
-//push data sp
-push
-@1 @2
-NO_BRANCH
-@next
-{}
-[1,1]
-<
-data:=@1
-@2:=@2-1
-st_ptr:=@2
->
-{}
-[1,1]
-<
-st_0:=(st_ptr=0)*data+(st_ptr!=0)*st_0
-st_1:=(st_ptr=1)*data+(st_ptr!=1)*st_1
-st_2:=(st_ptr=2)*data+(st_ptr!=2)*st_2
-st_3:=(st_ptr=3)*data+(st_ptr!=3)*st_3
 >
