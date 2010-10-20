@@ -1184,6 +1184,13 @@ int language::set_rate(string term){
   return r_val;
 }
 
+bool language::empty(){
+  if (head==NULL)
+    return true;
+  return false;
+}
+
+
 language::language(){
   delimiters = "";
   filename = "";
@@ -1821,3 +1828,60 @@ void lhpn::update(language *prog){
     curr_inst = curr_inst->next;
   }
 };
+
+env::env(){
+  in_language = NULL;
+  out_language = NULL;
+  pragmas = new pr_list();
+  mark = true;
+  fail_trans = false;
+}
+
+env::env(env* old){
+  in_language = old->in_language;
+  out_language = NULL;
+  pragmas = new pr_list(old->pragmas);
+  mark = true;
+  fail_trans = false;
+}
+
+env::~env(){
+  delete pragmas;
+  delete out_language;
+  if (progfile.is_open())
+    progfile.close();
+}
+
+
+env_stack::env_stack(){
+  head = tail = NULL;
+}
+
+env_stack::~env_stack(){
+  env* temp = head;
+  while (temp){
+    delete temp;
+    temp = pop();
+  }
+}
+
+bool env_stack::empty(){
+  return (head == NULL);
+}
+
+void env_stack::push(env* add){
+  if (head != NULL){
+    add->next = head;
+    head = add;
+  }
+  else{
+    head = tail = add;
+  }
+}
+
+env *env_stack::pop(){
+  env *temp = head;
+  if (head != NULL)
+    head = head->next;
+  return temp;
+}

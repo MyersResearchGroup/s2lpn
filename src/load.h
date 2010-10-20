@@ -201,6 +201,7 @@ class language{
   int set_val(string term);
   int set_sig(string term);
   int set_rate(string term);
+  bool empty();
   language();
   ~language();
 };
@@ -215,6 +216,28 @@ class library{
   ~library();
 };
 
+class env{
+ public:
+  language *in_language, *out_language;
+  fstream progfile;
+  pr_list *pragmas;
+  int mark;
+  int fail_trans;
+  env* next;
+  env();
+  env(env *old);
+  ~env();
+};
+
+class env_stack{
+ public:
+  env *head, *tail;
+  void push(env *add);
+  env *pop();
+  bool empty();
+  env_stack();
+  ~env_stack();
+};
 
 class lhpn{
 public:

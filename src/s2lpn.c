@@ -125,24 +125,65 @@ language *get_language(library *languages, string fname){
   return temp;
 }
 
+void process_prags(env *curr_env){
+  string word1,word2;
+  str_pr *tmp_pr = curr_env->pragmas->head;
+  while (tmp_pr){
+    //cout << "pragma: "<< tmp_pr->left<< ":" <<tmp_pr->right<<"\n";
+    if (tmp_pr->left == "univ_pred")
+      curr_env->out_language->predicate(tmp_pr->right);
+    else if (tmp_pr->left == "init_val"){
+      //cout << "found init_val :"<< tmp_pr->right<<endl;
+      if (!curr_env->out_language->set_val(tmp_pr->right)){
+	word1 = getword(tmp_pr->right);
+	word2 = stripword(tmp_pr->right);
+	curr_env->out_language->head->vars->insert(word1,word2);
+      }
+    }
+    else if (tmp_pr->left == "init_sig"){
+      //	cout << "found init_sig :"<< tmp_pr->right<<endl;
+      if (!curr_env->out_language->set_val(tmp_pr->right)){
+	word1 = getword(tmp_pr->right);
+	word2 = stripword(tmp_pr->right);
+	cout << word1 <<":"<<word2<<":"<<endl;
+	curr_env->out_language->head->sigs->print();
+	curr_env->out_language->head->sigs->insert(word1,word2);
+	curr_env->out_language->head->sigs->print();
+      }
+    }
+    else if (tmp_pr->left == "init_rate"){
+      //cout << "found init_rate :"<< tmp_pr->right<<endl;
+      if (!curr_env->out_language->set_rate(tmp_pr->right)){
+	word1 = getword(tmp_pr->right);
+	word2 = stripword(tmp_pr->right);
+	curr_env->out_language->head->conts->insert(word1,word2);
+      }
+    }
+    tmp_pr = tmp_pr->next;
+  }
+}
+
+
+
 int main(int argc, char *argv[]){
   // this is what we're building
   lhpn *graph = new lhpn;
   // input lines and parts thereof
   string line, prag, prag_args;
-  // set of pragmas
-  pr_list *pragmas;
   // file names
   string langFname, progFname, outFname;
-  // reformatted instructions for output
-  language *in_language,*out_language;
   string word1, word2;
   library *langs = new library;
+  env *curr_env;
+  env_stack *stack = new env_stack;
   int i;
+  //determine name for output file
   if (argc >1){
     line = argv[1];
     if (line == "-o"){
+    // if argv[1] is "-o", use argv[2] as output name
       outFname = argv[2];
+      // make sure output has a ".lpn" terminator
       size_t suffix = outFname.find_last_of(".");
       if (suffix != outFname.npos){
 	outFname = outFname.substr(0,suffix) + ".lpn";
@@ -150,91 +191,91 @@ int main(int argc, char *argv[]){
       else{
 	outFname += ".lpn";
       }
+      // advance past "-o outputfilename"
       i = 3;
     }
     else {
+      // no outputfile was specified, use name of the first file instead.
       outFname = argv[1];
       outFname = outFname.substr(0,outFname.length()-2)+".lpn";
       i = 1;
     }
   }
   while(i<argc){
-    // status of first instruction
-    int mark = 1;
-    int fail_trans = 0;
-    pragmas = new pr_list;
-    out_language = new language;
+    //start to process a main file, create seed environment
+    curr_env = new env;
+    curr_env->pragmas = new pr_list;
+    curr_env->out_language = new language;
+    // extract file name from argv and open file
     progFname = argv[i++];
     cout << "opening file " << progFname << "\n";
-    fstream progfile(progFname.c_str(),fstream::in);
-    if (!progfile.is_open()){
+    curr_env->progfile.open(progFname.c_str(),fstream::in);
+    if (!curr_env->progfile.is_open()){
       cout << "failed to open file " << progFname <<endl;
       return 2;
     } 
-    out_language->filename = progFname;
-    // get Language name
-    line = ass_pop_line(&progfile);
-    langFname = stripword(line);
-    in_language = get_language(langs,langFname);
-    if (!in_language){
-      return 1;
-    }
-    //return 0;
-    out_language->merger = in_language->merger;
+    curr_env->out_language->filename = progFname;
+    // file is open.  begin to process.
     // get first input instruction
-    line = ass_pop_line(&progfile);
+    line = ass_pop_line(&(curr_env->progfile));
     // repeat until you've exhausted the file
-    while ((!progfile.eof())||(line.length()!=0)){
-      //cout << "mark = "<<mark<<"\n";
-      //cout << "fail_trans = "<<fail_trans<<"\n";
-      process_line(line,in_language,&progfile,out_language,pragmas,
-		   &mark,&fail_trans);
-      line = ass_pop_line(&progfile);
-    }
-    //cout << "finished processing\n";
-    //out_language->print();
-    // process "merged" instructions here.
-    out_language->merge();
-    //out_language->print();
-    str_pr *tmp_pr = pragmas->head;
-    while (tmp_pr){
-      //cout << "pragma: "<< tmp_pr->left<< ":" <<tmp_pr->right<<"\n";
-      if (tmp_pr->left == "univ_pred")
-	out_language->predicate(tmp_pr->right);
-      else if (tmp_pr->left == "init_val"){
-	//cout << "found init_val :"<< tmp_pr->right<<endl;
-	if (!out_language->set_val(tmp_pr->right)){
-	  word1 = getword(tmp_pr->right);
-	  word2 = stripword(tmp_pr->right);
-	  out_language->head->vars->insert(word1,word2);
+    while ((curr_env!=NULL)&&(!curr_env->progfile.eof())||(line.length()!=0)){
+      word1 = getword(line) ;
+      // start using a new language
+      if (word1 == "include"){
+	// merge existing inputs (we may be changing merge codes)
+	if (!(curr_env->out_language->empty())){
+	  // process "merged" instructions here.
+	  curr_env->out_language->merge();
+	}
+	// get new input language
+	langFname = stripword(line);
+	curr_env->in_language = get_language(langs,langFname);
+	if (!(curr_env->in_language)){
+	  return 1;
+	}      
+	curr_env->out_language->merger = curr_env->in_language->merger;
+      }
+      // start new input file
+      else if (word1 == "input"){
+	stack->push(curr_env);
+	curr_env = new env(curr_env);
+	curr_env->out_language = new language;
+	//open input
+	word2 = getword(stripword(line));
+	cout << "opening file " << word2 << "\n";
+	curr_env->progfile.open(word2.c_str(),fstream::in);
+	if (!curr_env->progfile.is_open()){
+	  cout << "failed to open file " << word2 <<endl;
+	  return 2;
+	} 	
+      }
+      else{
+	// just another line.  Process it...
+	process_line(line,curr_env->in_language,&curr_env->progfile,
+		     curr_env->out_language,curr_env->pragmas,
+		     &curr_env->mark,&curr_env->fail_trans);
+      }
+      // get the next line
+      line = ass_pop_line(&curr_env->progfile);
+      // if you finished a file
+      if ((curr_env->progfile.eof())&&(line.length()==0)){
+	//cout << "flushing...\n";
+	// process pragmas
+	process_prags(curr_env);
+	// update lhpn
+	graph->update(curr_env->out_language);
+	// delete finished environment
+	delete curr_env;
+	// pop stack
+	curr_env = stack->pop();
+	if (curr_env){
+	  // get new line from current envirionment
+	  line = ass_pop_line(&curr_env->progfile);
 	}
       }
-      else if (tmp_pr->left == "init_sig"){
-	//	cout << "found init_sig :"<< tmp_pr->right<<endl;
-	if (!out_language->set_val(tmp_pr->right)){
-	  word1 = getword(tmp_pr->right);
-	  word2 = stripword(tmp_pr->right);
-	  cout << word1 <<":"<<word2<<":"<<endl;
-	  out_language->head->sigs->print();
-	  out_language->head->sigs->insert(word1,word2);
-	  out_language->head->sigs->print();
-	}
-      }
-      else if (tmp_pr->left == "init_rate"){
-	//cout << "found init_rate :"<< tmp_pr->right<<endl;
-	if (!out_language->set_rate(tmp_pr->right)){
-	  word1 = getword(tmp_pr->right);
-	  word2 = stripword(tmp_pr->right);
-	  out_language->head->conts->insert(word1,word2);
-	}
-     }
-      tmp_pr = tmp_pr->next;
     }
-    //out_language->print();
-    graph->update(out_language);
-    delete pragmas;
-    delete out_language;
-    progfile.close();
+    cout << "finished processing\n";
   } 
   graph->print(outFname);
 }
