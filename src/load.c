@@ -1832,6 +1832,9 @@ void lhpn::update(language *prog){
 env::env(){
   in_language = NULL;
   out_language = NULL;
+  instance = "";
+  globals = new str_list();
+  portmaps = new pr_list();
   pragmas = new pr_list();
   mark = true;
   fail_trans = false;
@@ -1840,6 +1843,9 @@ env::env(){
 env::env(env* old){
   in_language = old->in_language;
   out_language = NULL;
+  instance = "";
+  globals = new str_list(old->globals);
+  portmaps = new pr_list(old->portmaps);
   pragmas = new pr_list(old->pragmas);
   mark = true;
   fail_trans = false;
@@ -1847,6 +1853,8 @@ env::env(env* old){
 
 env::~env(){
   delete pragmas;
+  delete globals;
+  delete portmaps;
   delete out_language;
   if (progfile.is_open())
     progfile.close();

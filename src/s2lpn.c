@@ -1,8 +1,6 @@
 #include "load.h"
 
-void process_line(string line, language *in_language, fstream* progfile,
-		  language *out_language, pr_list *pragmas, int *mark, 
-		  int *fail_trans){
+void process_line(string line, env *curr_env){
   instruction *curr_mnem = 0;
   string prag, prag_args;
   string word, word2;
@@ -20,28 +18,28 @@ void process_line(string line, language *in_language, fstream* progfile,
   line = stripword(line);
   //cout << "looking up \""<<word2<<"\" with args \"" <<line <<"\"\n";
   if (word2 == "mark"){
-    *mark = 1;
+    curr_env->mark = 1;
     found++;
     //cout << "marking next instruction.\n";
   }
   if (word2 == "unmark"){
-    *mark = 0;
+    curr_env->mark = 0;
     found++;
     //cout << "unmarking next instruction.\n";
   }
   if (word2 == "fail_set"){
-    *fail_trans = 1;
+    curr_env->fail_trans = 1;
     found++;
     //cout << "next instruction in fail set.\n";
   }
   if ((word2 == "univ_pred")||(word2 == "init_val")||(word2 == "init_sig")||
       (word2 == "init_rate")){
     //out << "pragma: " << word2<<" "<<line<< "\n";
-        pragmas->tail_insert(word2, line);
+        curr_env->pragmas->tail_insert(word2, line);
     found++;
   }
   else {
-    curr_mnem = in_language->find_inst(upconvert(word2), line);
+    curr_mnem = curr_env->in_language->find_inst(upconvert(word2), line);
     if (curr_mnem)
       found++;
   }
@@ -62,11 +60,11 @@ void process_line(string line, language *in_language, fstream* progfile,
       if ((word2 == "univ_pred")||(word2 == "init_val")||
 	(word2 == "init_sig")||(word2 == "init_rate")){
 	cout << "pragma: " << word2<<" "<<line<< "\n";
-	pragmas->tail_insert(word2, line);
+	curr_env->pragmas->tail_insert(word2, line);
 	found++;
       }
       else {
-	curr_mnem=in_language->find_inst(upconvert(word2), line);
+	curr_mnem=curr_env->in_language->find_inst(upconvert(word2), line);
 	if (curr_mnem)
 	  found++;
       }
@@ -74,16 +72,16 @@ void process_line(string line, language *in_language, fstream* progfile,
   if (curr_mnem){
     //cout << "found the instruction\n";
     curr_mnem->label = word;
-    if (*mark){
+    if (curr_env->mark){
       //cout << "marking this instruction\n";
       curr_mnem->marked = 1;
-      *mark = 0;
+      curr_env->mark = 0;
     }
-    if (*fail_trans){
+    if (curr_env->fail_trans){
       curr_mnem->failed = 1;
-      *fail_trans = 0;
+      curr_env->fail_trans = 0;
     }
-    out_language->tail_insert(curr_mnem);
+    curr_env->out_language->tail_insert(curr_mnem);
   }
   else if (!found){
     cout << "*** instruction "<< word << " " << word2 
@@ -250,19 +248,43 @@ int main(int argc, char *argv[]){
 	  return 2;
 	} 	
       }
+      // instatiate a copy of an input file
+      // format: instance infile.s instance_name portmaps
+      // portmaps provided in pairs, format: original_name new name
+      else if (word1 == "instance"){
+	line = stripword(line);
+	stack->push(curr_env);
+	curr_env = new env(curr_env);
+	curr_env->out_language = new language;
+	//open input
+	word2 = getword(line);
+	cout << "opening file " << word2 << "\n";
+	curr_env->progfile.open(word2.c_str(),fstream::in);
+	if (!curr_env->progfile.is_open()){
+	  cout << "failed to open file " << word2 <<endl;
+	  return 2;
+	} 	
+	line = stripword(line);
+	curr_env->instance = getword(line);
+	line = stripword(line);
+	// read portmaps 
+      }
       else{
 	// just another line.  Process it...
-	process_line(line,curr_env->in_language,&curr_env->progfile,
-		     curr_env->out_language,curr_env->pragmas,
-		     &curr_env->mark,&curr_env->fail_trans);
+	process_line(line,curr_env);
       }
       // get the next line
       line = ass_pop_line(&curr_env->progfile);
       // if you finished a file
       if ((curr_env->progfile.eof())&&(line.length()==0)){
 	//cout << "flushing...\n";
+	if (!(curr_env->out_language->empty())){
+	  // process "merged" instructions here.
+	  curr_env->out_language->merge();
+	}
 	// process pragmas
 	process_prags(curr_env);
+	// process portmaps;
 	// update lhpn
 	graph->update(curr_env->out_language);
 	// delete finished environment

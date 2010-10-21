@@ -220,7 +220,9 @@ class env{
  public:
   language *in_language, *out_language;
   fstream progfile;
-  pr_list *pragmas;
+  string instance;
+  str_list *globals;
+  pr_list *pragmas, *portmaps;
   int mark;
   int fail_trans;
   env* next;
